@@ -5,20 +5,20 @@ use std::error;
 pub type BoxError = Box<dyn error::Error>;
 
 #[derive(Debug)]
-pub enum MenuError {
+pub enum OledError {
     OledHttp(jsonrpc_client_http::Error),
     OledClient(jsonrpc_client_core::Error),
 }
 
-impl From<jsonrpc_client_http::Error> for MenuError {
-    fn from(err: jsonrpc_client_http::Error) -> MenuError {
-        MenuError::OledHttp(err)
+impl From<jsonrpc_client_http::Error> for OledError {
+    fn from(err: jsonrpc_client_http::Error) -> OledError {
+        OledError::OledHttp(err)
     }
 }
 
-impl From<jsonrpc_client_core::Error> for MenuError {
-    fn from(err: jsonrpc_client_core::Error) -> MenuError {
-        MenuError::OledClient(err)
+impl From<jsonrpc_client_core::Error> for OledError {
+    fn from(err: jsonrpc_client_core::Error) -> OledError {
+        OledError::OledClient(err)
     }
 }
 
