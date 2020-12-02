@@ -19,7 +19,7 @@ use peach_lib::network_client;
 Call one of the exposed methods:
 
 ```rust
-network_client::ip()?;
+network_client::ip("wlan0")?;
 ```
 
 ### Licensing
