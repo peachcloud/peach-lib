@@ -15,7 +15,7 @@ use crate::error::OledError;
 /// * `y_coord` - A 32 byte signed int.
 /// * `string` - A String containing the message to be displayed.
 /// * `font_size` - A String containing `6x8`, `6x12`, `8x16` or `12x16`
-pub fn oled_clear() -> std::result::Result<(), OledError> {
+pub fn clear() -> std::result::Result<(), OledError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
@@ -31,7 +31,7 @@ pub fn oled_clear() -> std::result::Result<(), OledError> {
     Ok(())
 }
 
-pub fn oled_draw(
+pub fn draw(
     bytes: Vec<u8>,
     width: u32,
     height: u32,
@@ -53,7 +53,7 @@ pub fn oled_draw(
     Ok("success".to_string())
 }
 
-pub fn oled_flush() -> std::result::Result<(), OledError> {
+pub fn flush() -> std::result::Result<(), OledError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
@@ -69,7 +69,7 @@ pub fn oled_flush() -> std::result::Result<(), OledError> {
     Ok(())
 }
 
-pub fn oled_ping() -> std::result::Result<(), OledError> {
+pub fn ping() -> std::result::Result<(), OledError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
@@ -85,7 +85,7 @@ pub fn oled_ping() -> std::result::Result<(), OledError> {
     Ok(())
 }
 
-pub fn oled_power(power: bool) -> std::result::Result<(), OledError> {
+pub fn power(power: bool) -> std::result::Result<(), OledError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
@@ -101,7 +101,7 @@ pub fn oled_power(power: bool) -> std::result::Result<(), OledError> {
     Ok(())
 }
 
-pub fn oled_write(
+pub fn write(
     x_coord: i32,
     y_coord: i32,
     string: &str,
