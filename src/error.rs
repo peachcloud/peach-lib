@@ -5,24 +5,6 @@ use std::error;
 pub type BoxError = Box<dyn error::Error>;
 
 #[derive(Debug)]
-pub enum OledError {
-    OledHttp(jsonrpc_client_http::Error),
-    OledClient(jsonrpc_client_core::Error),
-}
-
-impl From<jsonrpc_client_http::Error> for OledError {
-    fn from(err: jsonrpc_client_http::Error) -> OledError {
-        OledError::OledHttp(err)
-    }
-}
-
-impl From<jsonrpc_client_core::Error> for OledError {
-    fn from(err: jsonrpc_client_core::Error) -> OledError {
-        OledError::OledClient(err)
-    }
-}
-
-#[derive(Debug)]
 pub enum NetworkError {
     NetworkHttp(jsonrpc_client_http::Error),
     NetworkClient(jsonrpc_client_core::Error),
@@ -37,6 +19,24 @@ impl From<jsonrpc_client_http::Error> for NetworkError {
 impl From<jsonrpc_client_core::Error> for NetworkError {
     fn from(err: jsonrpc_client_core::Error) -> NetworkError {
         NetworkError::NetworkClient(err)
+    }
+}
+
+#[derive(Debug)]
+pub enum OledError {
+    OledHttp(jsonrpc_client_http::Error),
+    OledClient(jsonrpc_client_core::Error),
+}
+
+impl From<jsonrpc_client_http::Error> for OledError {
+    fn from(err: jsonrpc_client_http::Error) -> OledError {
+        OledError::OledHttp(err)
+    }
+}
+
+impl From<jsonrpc_client_core::Error> for OledError {
+    fn from(err: jsonrpc_client_core::Error) -> OledError {
+        OledError::OledClient(err)
     }
 }
 
