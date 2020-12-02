@@ -6,11 +6,12 @@
 //! microservice and returns the response to the caller. These convenience
 //! methods simplify the process of performing RPC calls from other modules.
 
-extern crate jsonrpc_client_http;
-
 use std::env;
 
+use jsonrpc_client_core::*;
 use jsonrpc_client_http::HttpTransport;
+use log::{debug, info};
+use serde_derive::{Deserialize, Serialize};
 
 use crate::error::StatsError;
 
