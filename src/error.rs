@@ -1,66 +1,26 @@
 //! Basic error handling for the network, OLED and stats JSON-RPC clients.
 
-use std::error;
-
-pub type BoxError = Box<dyn error::Error>;
-
 #[derive(Debug)]
-pub enum NetworkError {
-    NetworkHttp(jsonrpc_client_http::Error),
-    NetworkClient(jsonrpc_client_core::Error),
+pub enum PeachError {
+    JsonRpcHttp(jsonrpc_client_http::Error),
+    JsonRpcCore(jsonrpc_client_core::Error),
+    Serde(serde_json::error::Error),
 }
 
-impl From<jsonrpc_client_http::Error> for NetworkError {
-    fn from(err: jsonrpc_client_http::Error) -> NetworkError {
-        NetworkError::NetworkHttp(err)
+impl From<jsonrpc_client_http::Error> for PeachError {
+    fn from(err: jsonrpc_client_http::Error) -> PeachError {
+        PeachError::JsonRpcHttp(err)
     }
 }
 
-impl From<jsonrpc_client_core::Error> for NetworkError {
-    fn from(err: jsonrpc_client_core::Error) -> NetworkError {
-        NetworkError::NetworkClient(err)
+impl From<jsonrpc_client_core::Error> for PeachError {
+    fn from(err: jsonrpc_client_core::Error) -> PeachError {
+        PeachError::JsonRpcCore(err)
     }
 }
 
-#[derive(Debug)]
-pub enum OledError {
-    OledHttp(jsonrpc_client_http::Error),
-    OledClient(jsonrpc_client_core::Error),
-}
-
-impl From<jsonrpc_client_http::Error> for OledError {
-    fn from(err: jsonrpc_client_http::Error) -> OledError {
-        OledError::OledHttp(err)
-    }
-}
-
-impl From<jsonrpc_client_core::Error> for OledError {
-    fn from(err: jsonrpc_client_core::Error) -> OledError {
-        OledError::OledClient(err)
-    }
-}
-
-#[derive(Debug)]
-pub enum StatsError {
-    StatsHttp(jsonrpc_client_http::Error),
-    StatsClient(jsonrpc_client_core::Error),
-    StatsSerde(serde_json::error::Error),
-}
-
-impl From<jsonrpc_client_http::Error> for StatsError {
-    fn from(err: jsonrpc_client_http::Error) -> StatsError {
-        StatsError::StatsHttp(err)
-    }
-}
-
-impl From<jsonrpc_client_core::Error> for StatsError {
-    fn from(err: jsonrpc_client_core::Error) -> StatsError {
-        StatsError::StatsClient(err)
-    }
-}
-
-impl From<serde_json::error::Error> for StatsError {
-    fn from(err: serde_json::error::Error) -> StatsError {
-        StatsError::StatsSerde(err)
+impl From<serde_json::error::Error> for PeachError {
+    fn from(err: serde_json::error::Error) -> PeachError {
+        PeachError::Serde(err)
     }
 }

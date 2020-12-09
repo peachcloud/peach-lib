@@ -1,6 +1,6 @@
 [package]
 name = "peach-lib"
-version = "1.0.2"
+version = "1.1.0"
 authors = ["Andrew Reid <gnomad@cryptolab.net>"]
 edition = "2018"
 

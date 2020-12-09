@@ -13,7 +13,7 @@ use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::error::StatsError;
+use crate::error::PeachError;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CpuStat {
@@ -71,7 +71,7 @@ pub struct Uptime {
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-stats`
 /// `cpu_stats_percent` method.
-pub fn cpu_stats_percent() -> std::result::Result<CpuStatPercentages, StatsError> {
+pub fn cpu_stats_percent() -> std::result::Result<CpuStatPercentages, PeachError> {
     debug!("Creating HTTP transport for stats client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_STATS_SERVER").unwrap_or_else(|_| "127.0.0.1:5113".to_string());
@@ -89,7 +89,7 @@ pub fn cpu_stats_percent() -> std::result::Result<CpuStatPercentages, StatsError
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-stats`
 /// `disk_usage` method.
-pub fn disk_usage() -> std::result::Result<String, StatsError> {
+pub fn disk_usage() -> std::result::Result<String, PeachError> {
     debug!("Creating HTTP transport for stats client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_STATS_SERVER").unwrap_or_else(|_| "127.0.0.1:5113".to_string());
@@ -106,7 +106,7 @@ pub fn disk_usage() -> std::result::Result<String, StatsError> {
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-stats`
 /// `cpu_stats_percent` method.
-pub fn load_average() -> std::result::Result<LoadAverage, StatsError> {
+pub fn load_average() -> std::result::Result<LoadAverage, PeachError> {
     debug!("Creating HTTP transport for stats client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_STATS_SERVER").unwrap_or_else(|_| "127.0.0.1:5113".to_string());
@@ -124,7 +124,7 @@ pub fn load_average() -> std::result::Result<LoadAverage, StatsError> {
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-stats`
 /// `cpu_stats_percent` method.
-pub fn mem_stats() -> std::result::Result<MemStat, StatsError> {
+pub fn mem_stats() -> std::result::Result<MemStat, PeachError> {
     debug!("Creating HTTP transport for stats client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_STATS_SERVER").unwrap_or_else(|_| "127.0.0.1:5113".to_string());
@@ -142,7 +142,7 @@ pub fn mem_stats() -> std::result::Result<MemStat, StatsError> {
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-stats`
 /// `ping` method.
-pub fn ping() -> std::result::Result<String, StatsError> {
+pub fn ping() -> std::result::Result<String, PeachError> {
     debug!("Creating HTTP transport for stats client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_STATS_SERVER").unwrap_or_else(|_| "127.0.0.1:5113".to_string());
@@ -160,7 +160,7 @@ pub fn ping() -> std::result::Result<String, StatsError> {
 /// Creates a JSON-RPC client with http transport and calls the `peach-stats`
 /// `uptime` method. If a successful response is returned, the uptime value (in
 /// seconds) is converted to minutes before being returned to the caller.
-pub fn uptime() -> std::result::Result<String, StatsError> {
+pub fn uptime() -> std::result::Result<String, PeachError> {
     debug!("Creating HTTP transport for stats client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_STATS_SERVER").unwrap_or_else(|_| "127.0.0.1:5113".to_string());
