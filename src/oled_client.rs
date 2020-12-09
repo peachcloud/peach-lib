@@ -4,7 +4,7 @@ use jsonrpc_client_core::*;
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
 
-use crate::error::OledError;
+use crate::error::PeachError;
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-oled`
 /// `clear`, `flush` and `write` methods.
@@ -15,7 +15,7 @@ use crate::error::OledError;
 /// * `y_coord` - A 32 byte signed int.
 /// * `string` - A String containing the message to be displayed.
 /// * `font_size` - A String containing `6x8`, `6x12`, `8x16` or `12x16`
-pub fn clear() -> std::result::Result<(), OledError> {
+pub fn clear() -> std::result::Result<(), PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
@@ -37,7 +37,7 @@ pub fn draw(
     height: u32,
     x_coord: i32,
     y_coord: i32,
-) -> std::result::Result<String, OledError> {
+) -> std::result::Result<String, PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
@@ -53,7 +53,7 @@ pub fn draw(
     Ok("success".to_string())
 }
 
-pub fn flush() -> std::result::Result<(), OledError> {
+pub fn flush() -> std::result::Result<(), PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
@@ -69,7 +69,7 @@ pub fn flush() -> std::result::Result<(), OledError> {
     Ok(())
 }
 
-pub fn ping() -> std::result::Result<(), OledError> {
+pub fn ping() -> std::result::Result<(), PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
@@ -85,7 +85,7 @@ pub fn ping() -> std::result::Result<(), OledError> {
     Ok(())
 }
 
-pub fn power(on: bool) -> std::result::Result<(), OledError> {
+pub fn power(on: bool) -> std::result::Result<(), PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
@@ -106,7 +106,7 @@ pub fn write(
     y_coord: i32,
     string: &str,
     font_size: &str,
-) -> std::result::Result<String, OledError> {
+) -> std::result::Result<String, PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr = env::var("PEACH_OLED_SERVER").unwrap_or_else(|_| "127.0.0.1:5112".to_string());
