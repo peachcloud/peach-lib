@@ -11,9 +11,30 @@ use std::env;
 use jsonrpc_client_core::{jsonrpc_client, expand_params};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
+use serde::{Deserialize, Serialize};
 
 use crate::error::PeachError;
 use crate::stats_client::Traffic;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AccessPoint {
+    pub detail: Option<Scan>,
+    pub signal: Option<i32>,
+    pub state: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Networks {
+    pub ssid: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Scan {
+    pub protocol: String,
+    pub frequency: String,
+    pub signal_level: String,
+    pub ssid: String,
+}
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-network`
 /// `activate_ap` method.
