@@ -8,7 +8,7 @@
 
 use std::env;
 
-use jsonrpc_client_core::{jsonrpc_client, expand_params};
+use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};

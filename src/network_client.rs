@@ -11,7 +11,7 @@
 
 use std::env;
 
-use jsonrpc_client_core::{jsonrpc_client, expand_params};
+use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
@@ -490,11 +490,7 @@ pub fn forget(iface: &str, ssid: &str) -> std::result::Result<String, PeachError
 /// * `iface` - A string slice containing the network interface identifier.
 /// * `ssid` - A string slice containing the SSID of a network.
 /// * `pass` - A string slice containing the password for a network.
-pub fn update(
-    iface: &str,
-    ssid: &str,
-    pass: &str,
-) -> std::result::Result<String, PeachError> {
+pub fn update(iface: &str, ssid: &str, pass: &str) -> std::result::Result<String, PeachError> {
     debug!("Creating HTTP transport for network client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr =
