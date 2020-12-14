@@ -5,15 +5,39 @@
 //! corresponding method which creates an HTTP transport, makes the call to the
 //! RPC microservice and returns the response to the caller. These convenience
 //! methods simplify the process of performing RPC calls from other modules.
+//!
+//! Several helper methods are also included here which bundle multiple client
+//! calls to achieve the desired functionality.
 
 use std::env;
 
-use jsonrpc_client_core::{jsonrpc_client, expand_params};
+use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
+use serde::{Deserialize, Serialize};
 
 use crate::error::PeachError;
 use crate::stats_client::Traffic;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AccessPoint {
+    pub detail: Option<Scan>,
+    pub signal: Option<i32>,
+    pub state: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Networks {
+    pub ssid: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Scan {
+    pub protocol: String,
+    pub frequency: String,
+    pub signal_level: String,
+    pub ssid: String,
+}
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-network`
 /// `activate_ap` method.
@@ -116,6 +140,67 @@ pub fn connect(id: &str, iface: &str) -> std::result::Result<String, PeachError>
     let mut client = PeachNetworkClient::new(transport_handle);
 
     let response = client.connect(id, iface).call()?;
+
+    Ok(response)
+}
+
+/// Creates a JSON-RPC client with http transport and calls the `peach-network`
+/// `id` and `disable` methods.
+///
+/// # Arguments
+///
+/// * `iface` - A string slice containing the network interface identifier.
+/// * `ssid` - A string slice containing the SSID of a network.
+pub fn disable(iface: &str, ssid: &str) -> std::result::Result<String, PeachError> {
+    debug!("Creating HTTP transport for network client.");
+    let transport = HttpTransport::new().standalone()?;
+    let http_addr =
+        env::var("PEACH_NETWORK_SERVER").unwrap_or_else(|_| "127.0.0.1:5110".to_string());
+    let http_server = format!("http://{}", http_addr);
+    debug!("Creating HTTP transport handle on {}.", http_server);
+    let transport_handle = transport.handle(&http_server)?;
+    info!("Creating client for peach_network service.");
+    let mut client = PeachNetworkClient::new(transport_handle);
+
+    info!("Performing id call to peach-network microservice.");
+    let id = client.id(&iface, &ssid).call()?;
+    info!("Performing disable call to peach-network microservice.");
+    client.disable(&id, &iface).call()?;
+
+    let response = "success".to_string();
+
+    Ok(response)
+}
+
+/// Creates a JSON-RPC client with http transport and calls the `peach-network`
+/// `id`, `delete` and `save` methods.
+///
+/// # Arguments
+///
+/// * `iface` - A string slice containing the network interface identifier.
+/// * `ssid` - A string slice containing the SSID of a network.
+pub fn forget(iface: &str, ssid: &str) -> std::result::Result<String, PeachError> {
+    debug!("Creating HTTP transport for network client.");
+    let transport = HttpTransport::new().standalone()?;
+    let http_addr =
+        env::var("PEACH_NETWORK_SERVER").unwrap_or_else(|_| "127.0.0.1:5110".to_string());
+    let http_server = format!("http://{}", http_addr);
+    debug!("Creating HTTP transport handle on {}.", http_server);
+    let transport_handle = transport.handle(&http_server)?;
+    info!("Creating client for peach_network service.");
+    let mut client = PeachNetworkClient::new(transport_handle);
+
+    info!("Performing id call to peach-network microservice.");
+    let id = client.id(&iface, &ssid).call()?;
+    info!("Performing delete call to peach-network microservice.");
+    // WEIRD BUG: the parameters below are technically in the wrong order:
+    // it should be id first and then iface, but somehow they get twisted.
+    // i don't understand computers.
+    client.delete(&iface, &id).call()?;
+    info!("Performing save call to peach-network microservice.");
+    client.save().call()?;
+
+    let response = "success".to_string();
 
     Ok(response)
 }
@@ -246,6 +331,49 @@ pub fn rssi_percent(iface: &str) -> std::result::Result<String, PeachError> {
     Ok(response)
 }
 
+/// Helper function to determine if a given SSID already exists in the
+/// `wpa_supplicant.conf` file, indicating that network credentials have already
+/// been added for that access point. Creates a JSON-RPC client with http
+/// transport and calls the `peach-network` `saved_networks` method. Returns a
+/// boolean expression inside a Result type.
+///
+/// # Arguments
+///
+/// * `ssid` - A string slice containing the SSID of a network.
+pub fn saved_ap(ssid: &str) -> std::result::Result<bool, PeachError> {
+    debug!("Creating HTTP transport for network client.");
+    let transport = HttpTransport::new().standalone()?;
+    let http_addr =
+        env::var("PEACH_NETWORK_SERVER").unwrap_or_else(|_| "127.0.0.1:5110".to_string());
+    let http_server = format!("http://{}", http_addr);
+    debug!("Creating HTTP transport handle on {}.", http_server);
+    let transport_handle = transport.handle(&http_server)?;
+    info!("Creating client for peach_network service.");
+    let mut client = PeachNetworkClient::new(transport_handle);
+
+    // retrieve a list of access points with saved credentials
+    let saved_aps = match client.saved_networks().call() {
+        Ok(ssids) => {
+            let networks: Vec<Networks> = serde_json::from_str(ssids.as_str())
+                .expect("Failed to deserialize saved_networks response");
+            networks
+        }
+        // return an empty vector if there are no saved access point credentials
+        Err(_) => Vec::new(),
+    };
+
+    // loop through the access points in the list
+    for network in saved_aps {
+        // return true if the access point ssid matches the given ssid
+        if network.ssid == ssid {
+            return Ok(true);
+        }
+    }
+
+    // return false if no matches are found
+    Ok(false)
+}
+
 /// Creates a JSON-RPC client with http transport and calls the `peach-network`
 /// `saved_networks` method, which returns a list of networks saved in
 /// `wpa_supplicant.conf`.
@@ -351,6 +479,50 @@ pub fn traffic(iface: &str) -> std::result::Result<Traffic, PeachError> {
     let t: Traffic = serde_json::from_str(&response).unwrap();
 
     Ok(t)
+}
+
+/// Creates a JSON-RPC client with http transport and calls the `peach-network`
+/// `id`, `delete`, `save` and `add` methods. These combined calls allow the
+/// saved password for an access point to be updated.
+///
+/// # Arguments
+///
+/// * `iface` - A string slice containing the network interface identifier.
+/// * `ssid` - A string slice containing the SSID of a network.
+/// * `pass` - A string slice containing the password for a network.
+pub fn update(iface: &str, ssid: &str, pass: &str) -> std::result::Result<String, PeachError> {
+    debug!("Creating HTTP transport for network client.");
+    let transport = HttpTransport::new().standalone()?;
+    let http_addr =
+        env::var("PEACH_NETWORK_SERVER").unwrap_or_else(|_| "127.0.0.1:5110".to_string());
+    let http_server = format!("http://{}", http_addr);
+    debug!("Creating HTTP transport handle on {}.", http_server);
+    let transport_handle = transport.handle(&http_server)?;
+    info!("Creating client for peach_network service.");
+    let mut client = PeachNetworkClient::new(transport_handle);
+
+    // get the id of the network
+    info!("Performing id call to peach-network microservice.");
+    let id = client.id(&iface, &ssid).call()?;
+    // delete the old credentials
+    // WEIRD BUG: the parameters below are technically in the wrong order:
+    // it should be id first and then iface, but somehow they get twisted.
+    // i don't understand computers.
+    info!("Performing delete call to peach-network microservice.");
+    client.delete(&iface, &id).call()?;
+    // save the updates to wpa_supplicant.conf
+    info!("Performing save call to peach-network microservice.");
+    client.save().call()?;
+    // add the new credentials
+    info!("Performing add call to peach-network microservice.");
+    client.add(ssid, pass).call()?;
+    // reconfigure wpa_supplicant with latest addition to config
+    info!("Performing reconfigure call to peach-network microservice.");
+    client.reconfigure().call()?;
+
+    let response = "success".to_string();
+
+    Ok(response)
 }
 
 jsonrpc_client!(pub struct PeachNetworkClient {
