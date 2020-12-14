@@ -5,6 +5,9 @@
 //! corresponding method which creates an HTTP transport, makes the call to the
 //! RPC microservice and returns the response to the caller. These convenience
 //! methods simplify the process of performing RPC calls from other modules.
+//!
+//! Several helper methods are also included here which bundle multiple client
+//! calls to achieve the desired functionality.
 
 use std::env;
 
@@ -383,7 +386,7 @@ pub fn traffic(iface: &str) -> std::result::Result<Traffic, PeachError> {
 /// # Arguments
 ///
 /// * `ssid` - A string slice containing the SSID of a network.
-pub fn check_saved_aps(ssid: &str) -> std::result::Result<bool, PeachError> {
+pub fn saved_ap(ssid: &str) -> std::result::Result<bool, PeachError> {
     debug!("Creating HTTP transport for network client.");
     let transport = HttpTransport::new().standalone()?;
     let http_addr =
@@ -435,10 +438,8 @@ pub fn disable(iface: &str, ssid: &str) -> std::result::Result<String, PeachErro
     info!("Creating client for peach_network service.");
     let mut client = PeachNetworkClient::new(transport_handle);
 
-    // get the id of the network
     info!("Performing id call to peach-network microservice.");
     let id = client.id(&iface, &ssid).call()?;
-    // disable the network
     info!("Performing disable call to peach-network microservice.");
     client.disable(&id, &iface).call()?;
 
@@ -481,14 +482,15 @@ pub fn forget(iface: &str, ssid: &str) -> std::result::Result<String, PeachError
 }
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-network`
-/// `id`, `delete`, `save` and `add` methods.
+/// `id`, `delete`, `save` and `add` methods. These combined calls allow the
+/// saved password for an access point to be updated.
 ///
 /// # Arguments
 ///
 /// * `iface` - A string slice containing the network interface identifier.
 /// * `ssid` - A string slice containing the SSID of a network.
 /// * `pass` - A string slice containing the password for a network.
-pub fn update_password(
+pub fn update(
     iface: &str,
     ssid: &str,
     pass: &str,
