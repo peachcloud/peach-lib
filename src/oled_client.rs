@@ -7,14 +7,7 @@ use log::{debug, info};
 use crate::error::PeachError;
 
 /// Creates a JSON-RPC client with http transport and calls the `peach-oled`
-/// `clear`, `flush` and `write` methods.
-///
-/// # Arguments
-///
-/// * `x_coord` - A 32 byte signed int.
-/// * `y_coord` - A 32 byte signed int.
-/// * `string` - A String containing the message to be displayed.
-/// * `font_size` - A String containing `6x8`, `6x12`, `8x16` or `12x16`
+/// `clear` method.
 pub fn clear() -> std::result::Result<(), PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
@@ -31,6 +24,16 @@ pub fn clear() -> std::result::Result<(), PeachError> {
     Ok(())
 }
 
+/// Creates a JSON-RPC client with http transport and calls the `peach-oled`
+/// `draw` method.
+///
+/// # Arguments
+///
+/// * `bytes` - A Vec of 8 byte unsigned int.
+/// * `width` - A 32 byte unsigned int.
+/// * `height` - A 32 byte unsigned int.
+/// * `x_coord` - A 32 byte signed int.
+/// * `y_coord` - A 32 byte signed int.
 pub fn draw(
     bytes: Vec<u8>,
     width: u32,
@@ -53,6 +56,8 @@ pub fn draw(
     Ok("success".to_string())
 }
 
+/// Creates a JSON-RPC client with http transport and calls the `peach-oled`
+/// `flush` method.
 pub fn flush() -> std::result::Result<(), PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
@@ -69,6 +74,8 @@ pub fn flush() -> std::result::Result<(), PeachError> {
     Ok(())
 }
 
+/// Creates a JSON-RPC client with http transport and calls the `peach-oled`
+/// `ping` method.
 pub fn ping() -> std::result::Result<(), PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
@@ -85,6 +92,12 @@ pub fn ping() -> std::result::Result<(), PeachError> {
     Ok(())
 }
 
+/// Creates a JSON-RPC client with http transport and calls the `peach-oled`
+/// `power` method.
+///
+/// # Arguments
+///
+/// * `power` - A boolean expression
 pub fn power(on: bool) -> std::result::Result<(), PeachError> {
     debug!("Creating HTTP transport for OLED client.");
     let transport = HttpTransport::new().standalone()?;
@@ -101,6 +114,15 @@ pub fn power(on: bool) -> std::result::Result<(), PeachError> {
     Ok(())
 }
 
+/// Creates a JSON-RPC client with http transport and calls the `peach-oled`
+/// `draw` method.
+///
+/// # Arguments
+///
+/// * `x_coord` - A 32 byte signed int.
+/// * `y_coord` - A 32 byte signed int.
+/// * `string` - A reference to a string slice
+/// * `font_size` - A reference to a string slice
 pub fn write(
     x_coord: i32,
     y_coord: i32,

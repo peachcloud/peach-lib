@@ -4,6 +4,8 @@
 
 JSON-RPC client library for the PeachCloud ecosystem.
 
+`peach-lib` offers the ability to programmatically interact with the `peach-network`, `peach-oled` and `peach-stats` microservices.
+
 ### Usage
 
 Define the dependency in your `Cargo.toml` file:
