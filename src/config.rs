@@ -12,17 +12,17 @@ pub const YAML_PATH: &str = "/var/lib/peachcloud/config.yml";
 
 // main type which represents all peachcloud configurations
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-struct PeachConfig {
+pub struct PeachConfig {
     peach_dyndns: PeachDynDnsConfig,
     test: String,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-struct PeachDynDnsConfig {
-    domain: String,
-    dns_server_address: String,
-    tsig_key_path: String,
-    log_file_path: String,
+pub struct PeachDynDnsConfig {
+    pub domain: String,
+    pub dns_server_address: String,
+    pub tsig_key_path: String,
+    pub log_file_path: String,
 }
 
 // helper functions for serializing and deserializing PeachConfig from disc
@@ -70,7 +70,7 @@ fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
 }
 
 // interfaces for setting specific config values
-fn set_peach_dyndns_config(
+pub fn set_peach_dyndns_config(
     new_dyndns_config: PeachDynDnsConfig,
 ) -> Result<PeachConfig, serde_yaml::Error> {
     let mut peach_config = load_peach_config().unwrap();
@@ -78,7 +78,7 @@ fn set_peach_dyndns_config(
     save_peach_config(peach_config)
 }
 
-fn set_config_test_value(new_test_value: &str) -> Result<PeachConfig, serde_yaml::Error> {
+pub fn set_config_test_value(new_test_value: &str) -> Result<PeachConfig, serde_yaml::Error> {
     let mut peach_config = load_peach_config().unwrap();
     peach_config.test = new_test_value.to_string();
     save_peach_config(peach_config)

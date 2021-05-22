@@ -1,5 +1,4 @@
 //! Basic error handling for the network, OLED and stats JSON-RPC clients.
-
 #[derive(Debug)]
 pub enum PeachError {
     JsonRpcHttp(jsonrpc_client_http::Error),
@@ -24,3 +23,5 @@ impl From<serde_json::error::Error> for PeachError {
         PeachError::Serde(err)
     }
 }
+
+
