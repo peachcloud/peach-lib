@@ -1,3 +1,7 @@
+//! Interfaces for writing and reading peachcloud configurations, stored in yaml.
+//!
+//! The configuration file is located at: "/var/lib/peachcloud/config.yml"
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
@@ -6,6 +10,7 @@ use std::io::Write;
 
 pub const YAML_PATH: &str = "/var/lib/peachcloud/config.yml";
 
+// main type which represents all peachcloud configurations
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct PeachConfig {
     peach_dyndns: PeachDynDnsConfig,
@@ -20,6 +25,7 @@ struct PeachDynDnsConfig {
     log_file_path: String,
 }
 
+// helper functions for serializing and deserializing PeachConfig from disc
 fn save_peach_config(peach_config: PeachConfig) -> Result<PeachConfig, serde_yaml::Error> {
     let yaml_str = serde_yaml::to_string(&peach_config)?;
     println!("{:?}", yaml_str);
@@ -63,8 +69,7 @@ fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
     Ok(peach_config)
 }
 
-// interfaces for setting config values
-
+// interfaces for setting specific config values
 fn set_peach_dyndns_config(
     new_dyndns_config: PeachDynDnsConfig,
 ) -> Result<PeachConfig, serde_yaml::Error> {
