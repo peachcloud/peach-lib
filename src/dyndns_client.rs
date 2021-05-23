@@ -12,47 +12,18 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
 pub mod config;
+pub mod error;
 use crate::config::{set_peach_dyndns_config, PeachDynDnsConfig};
+use crate::error::PeachError;
 use serde_json::Value;
+use jsonrpc_client_core::{expand_params, jsonrpc_client};
+use jsonrpc_client_http::HttpTransport;
 
 pub const PEACH_DYNDNS_URL: &str = "http://dynserver.dyn.peachcloud.org";
 pub const TSIG_KEY_PATH: &str = "/var/lib/peachcloud/peach-dyndns/tsig.key";
 pub const PEACH_DYNDNS_CONFIG_PATH: &str = "/var/lib/peachcloud/peach-dyndns";
 pub const DYNDNS_LOG_PATH: &str = "/var/lib/peachcloud/peach-dyndns/latest_result.log";
 
-// the type returned by peach-dyndns-server requests
-// note that this type is defined slightly differently in peach-dyndns-server,
-// where data is of type Option<rocket::contrib::JsonValue>
-// and here data is of type Option<serde_json::Value>
-// serializing and deserializing between these types is ok as explained here
-// https://api.rocket.rs/v0.4/rocket_contrib/json/struct.JsonValue.html
-#[derive(Deserialize, Debug)]
-pub struct JsonResponse {
-    pub status: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub msg: Option<String>,
-}
-
-impl JsonResponse {
-    fn success(&self) -> bool {
-        return self.status == "success";
-    }
-}
-
-#[derive(Debug)]
-pub enum PeachDynDnsError {
-    ServerError(JsonResponse),
-    InvalidServerResponse(JsonResponse),
-    ReqwestError(reqwest::Error),
-}
-
-impl From<reqwest::Error> for PeachDynDnsError {
-    fn from(err: reqwest::Error) -> PeachDynDnsError {
-        PeachDynDnsError::ReqwestError(err)
-    }
-}
 
 // helper function which saves dyndns TSIG key returned by peach-dyndns-server to /var/lib/peachcloud/peach-dyndns/tsig.key
 pub fn save_dyndns_key(key: &str) {
@@ -71,59 +42,40 @@ pub fn save_dyndns_key(key: &str) {
 /// Makes a post request to register a new domain with peach-dyns-server
 /// if the post is successful, the domain is registered with peach-dyndns-server
 /// and peachcloud is configured to start updating the IP of this domain using nsupdate
-pub fn register_domain(domain: &str) -> std::result::Result<(), PeachDynDnsError> {
-    // This will POST a body of `{"lang":"rust","body":"json"}`
-    let mut map = HashMap::new();
-    map.insert("domain", domain);
+pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> {
+    debug!("Creating HTTP transport for network client.");
+    let transport = HttpTransport::new().standalone()?;
+    let http_server = PEACH_DYNDNS_URL;
+    debug!("Creating HTTP transport handle on {}.", http_server);
+    let transport_handle = transport.handle(&http_server)?;
+    info!("Creating client for peach_network service.");
+    let mut client = PeachDynDnsClient::new(transport_handle);
 
-    let client = Client::new();
-    let api_url = PEACH_DYNDNS_URL.to_owned() + "/domain/register";
-    let res = client.post(api_url).json(&map).send();
-
+    info!("Performing register_domain call to peach-dyndns-server");
+    let res = client.register_domain(&domain).call();
+    info!("res: {:?}", res);
     match res {
-        Ok(res) => {
-            let deserialized_result: Result<JsonResponse, reqwest::Error> = res.json();
-            match deserialized_result {
-                Ok(deserialized) => {
-                    if deserialized.success() {
-                        println!("success!");
-                        println!("deserialized: {:?}", deserialized);
-                        // return the key text which is stored as the response msg
-                        match deserialized.msg {
-                            Some(key) => {
-                                // save key to file
-                                save_dyndns_key(&key);
-                                // save configuration
-                                let new_peach_dyndns_config = PeachDynDnsConfig {
-                                    domain: domain.to_string(),
-                                    dns_server_address: PEACH_DYNDNS_URL.to_string(),
-                                    tsig_key_path: TSIG_KEY_PATH.to_string(),
-                                    log_file_path: DYNDNS_LOG_PATH.to_string(),
-                                };
-                                set_peach_dyndns_config(new_peach_dyndns_config);
-                                Ok(())
-                            }
-                            None => Err(PeachDynDnsError::InvalidServerResponse(deserialized)),
-                        }
-                    } else {
-                        Err(PeachDynDnsError::ServerError(deserialized))
-                    }
-                }
-                Err(err) => {
-                    // deserialization error
-                    Err(PeachDynDnsError::ReqwestError(err))
-                }
-            }
+        Ok(key) => {
+            save_dyndns_key(&key);
+            let response = "success".to_string();
+            Ok(response)
         }
         Err(err) => {
-            // reqwest error
-            Err(PeachDynDnsError::ReqwestError(err))
+            Err(PeachError::JsonRpcCore(err))
         }
     }
 }
 
+
+
+jsonrpc_client!(pub struct PeachDynDnsClient {
+    /// JSON-RPC request to activate the access point.
+    pub fn register_domain(&mut self, domain: &str) -> RpcRequest<String>;
+
+});
+
 // main fn for testing
-fn main() -> Result<(), PeachDynDnsError> {
+fn main() -> () {
     let test_domain = "quartet.dyn.peachcloud.org";
 
     let result = register_domain(test_domain);
@@ -133,5 +85,5 @@ fn main() -> Result<(), PeachDynDnsError> {
         Err(err) => println!("err: {:?}", err),
     }
 
-    Ok(())
+    ()
 }
