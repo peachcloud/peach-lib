@@ -3,22 +3,22 @@
 //!
 //! the domain for dyndns updates is stored in /var/lib/peachcloud/config.yml
 //! the tsig key for authenticating the udpates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
-use std::env;
-use std::fs;
 use log::{debug, info};
+use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::env;
+use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
-use reqwest::blocking::Client;
 pub mod config;
 use crate::config::{set_peach_dyndns_config, PeachDynDnsConfig};
 use serde_json::Value;
 
-pub const PEACH_DYNDNS_URL : &str = "http://dynserver.dyn.peachcloud.org";
-pub const TSIG_KEY_PATH : &str = "/var/lib/peachcloud/peach-dyndns/tsig.key";
-pub const PEACH_DYNDNS_CONFIG_PATH : &str = "/var/lib/peachcloud/peach-dyndns";
-pub const DYNDNS_LOG_PATH : &str = "/var/lib/peachcloud/peach-dyndns/latest_result.log";
+pub const PEACH_DYNDNS_URL: &str = "http://dynserver.dyn.peachcloud.org";
+pub const TSIG_KEY_PATH: &str = "/var/lib/peachcloud/peach-dyndns/tsig.key";
+pub const PEACH_DYNDNS_CONFIG_PATH: &str = "/var/lib/peachcloud/peach-dyndns";
+pub const DYNDNS_LOG_PATH: &str = "/var/lib/peachcloud/peach-dyndns/latest_result.log";
 
 // the type returned by peach-dyndns-server requests
 // note that this type is defined slightly differently in peach-dyndns-server,
@@ -37,7 +37,7 @@ pub struct JsonResponse {
 
 impl JsonResponse {
     fn success(&self) -> bool {
-        return self.status == "success"
+        return self.status == "success";
     }
 }
 
@@ -54,11 +54,11 @@ impl From<reqwest::Error> for PeachDynDnsError {
     }
 }
 
-
 // helper function which saves dyndns TSIG key returned by peach-dyndns-server to /var/lib/peachcloud/peach-dyndns/tsig.key
 pub fn save_dyndns_key(key: &str) {
     // create directory if it doesn't exist
-    fs::create_dir_all(PEACH_DYNDNS_CONFIG_PATH).expect(&format!("Failed to create: {}", PEACH_DYNDNS_CONFIG_PATH));
+    fs::create_dir_all(PEACH_DYNDNS_CONFIG_PATH)
+        .expect(&format!("Failed to create: {}", PEACH_DYNDNS_CONFIG_PATH));
     // write key text
     let mut file = OpenOptions::new()
         .write(true)
@@ -78,13 +78,11 @@ pub fn register_domain(domain: &str) -> std::result::Result<(), PeachDynDnsError
 
     let client = Client::new();
     let api_url = PEACH_DYNDNS_URL.to_owned() + "/domain/register";
-    let res = client.post(api_url)
-        .json(&map)
-        .send();
+    let res = client.post(api_url).json(&map).send();
 
     match res {
         Ok(res) => {
-            let deserialized_result : Result<JsonResponse, reqwest::Error> = res.json();
+            let deserialized_result: Result<JsonResponse, reqwest::Error> = res.json();
             match deserialized_result {
                 Ok(deserialized) => {
                     if deserialized.success() {
@@ -104,11 +102,10 @@ pub fn register_domain(domain: &str) -> std::result::Result<(), PeachDynDnsError
                                 };
                                 set_peach_dyndns_config(new_peach_dyndns_config);
                                 Ok(())
-                            },
-                            None => Err(PeachDynDnsError::InvalidServerResponse(deserialized))
+                            }
+                            None => Err(PeachDynDnsError::InvalidServerResponse(deserialized)),
                         }
-                    }
-                    else {
+                    } else {
                         Err(PeachDynDnsError::ServerError(deserialized))
                     }
                 }
@@ -125,18 +122,15 @@ pub fn register_domain(domain: &str) -> std::result::Result<(), PeachDynDnsError
     }
 }
 
-
-
 // main fn for testing
 fn main() -> Result<(), PeachDynDnsError> {
-
     let test_domain = "quartet.dyn.peachcloud.org";
 
     let result = register_domain(test_domain);
 
     match result {
         Ok(key) => println!("returned key!"),
-        Err(err) => println!("err: {:?}", err)
+        Err(err) => println!("err: {:?}", err),
     }
 
     Ok(())
