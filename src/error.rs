@@ -4,6 +4,7 @@ pub enum PeachError {
     JsonRpcHttp(jsonrpc_client_http::Error),
     JsonRpcCore(jsonrpc_client_core::Error),
     Serde(serde_json::error::Error),
+    ParseBoolError(std::str::ParseBoolError),
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {

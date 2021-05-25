@@ -22,7 +22,6 @@ pub struct PeachDynDnsConfig {
     pub domain: String,
     pub dns_server_address: String,
     pub tsig_key_path: String,
-    pub log_file_path: String,
 }
 
 // helper functions for serializing and deserializing PeachConfig from disc
@@ -50,9 +49,8 @@ fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
     if !peach_config_exists {
         let peach_dyndns_config = PeachDynDnsConfig {
             domain: "test.dyn.peachcloud.org".to_string(),
-            dns_server_address: "api.dyn.peachcloud.org".to_string(),
+            dns_server_address: "dynserver.dyn.peachcloud.org".to_string(),
             tsig_key_path: "/var/lib/peachcloud/peach-dyndns/tsig.key".to_string(),
-            log_file_path: "/var/lib/peachcloud/peach-dyndns/dyndns.log".to_string(),
         };
         peach_config = PeachConfig {
             test: "xyz".to_string(),
@@ -90,7 +88,6 @@ fn main() -> Result<(), serde_yaml::Error> {
         domain: "newtest.dyn.peachcloud.org".to_string(),
         dns_server_address: "api.dyn.peachcloud.org".to_string(),
         tsig_key_path: "/var/lib/peachcloud/peach-dyndns/tsig.key".to_string(),
-        log_file_path: "/var/lib/peachcloud/peach-dyndns/dyndns.log".to_string(),
     };
 
     set_peach_dyndns_config(new_peach_dyndns_config);
