@@ -7,12 +7,12 @@ use log::{debug, info};
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::str::FromStr;
-use std::str::ParseBoolError;
 use std::env;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::str::FromStr;
+use std::str::ParseBoolError;
 pub mod config;
 pub mod error;
 use crate::config::{set_peach_dyndns_config, PeachDynDnsConfig};
@@ -63,9 +63,14 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
                 dns_server_address: PEACH_DYNDNS_URL.to_string(),
                 tsig_key_path: TSIG_KEY_PATH.to_string(),
             };
-            set_peach_dyndns_config(new_peach_dyn_dns_config);
-            let response = "success".to_string();
-            Ok(response)
+            let set_config_result = set_peach_dyndns_config(new_peach_dyn_dns_config);
+            match set_config_result {
+                Ok(_) => {
+                    let response = "success".to_string();
+                    Ok(response)
+                }
+                Err(err) => Err(PeachError::SetConfigError(err)),
+            }
         }
         Err(err) => Err(PeachError::JsonRpcCore(err)),
     }
@@ -86,7 +91,7 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
     info!("res: {:?}", res);
     match res {
         Ok(result_str) => {
-            let result : Result<bool, ParseBoolError> = FromStr::from_str(&result_str);
+            let result: Result<bool, ParseBoolError> = FromStr::from_str(&result_str);
             match result {
                 Ok(result_bool) => Ok(result_bool),
                 Err(err) => Err(PeachError::ParseBoolError(err)),
@@ -95,8 +100,6 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
         Err(err) => Err(PeachError::JsonRpcCore(err)),
     }
 }
-
-
 
 jsonrpc_client!(pub struct PeachDynDnsClient {
     pub fn register_domain(&mut self, domain: &str) -> RpcRequest<String>;
@@ -121,7 +124,7 @@ fn main() -> () {
     let result = is_domain_available(test_domain);
     match result {
         Ok(r) => println!("is available: {:?}", r),
-        Err(err) => println!("err: {:?}", err)
+        Err(err) => println!("err: {:?}", err),
     }
 
     ()
