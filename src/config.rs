@@ -4,7 +4,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Write;
 
@@ -80,18 +79,4 @@ pub fn set_config_test_value(new_test_value: &str) -> Result<PeachConfig, serde_
     let mut peach_config = load_peach_config().unwrap();
     peach_config.test = new_test_value.to_string();
     save_peach_config(peach_config)
-}
-
-// main fn for testing
-fn main() -> Result<(), serde_yaml::Error> {
-    let new_peach_dyndns_config = PeachDynDnsConfig {
-        domain: "newtest.dyn.peachcloud.org".to_string(),
-        dns_server_address: "api.dyn.peachcloud.org".to_string(),
-        tsig_key_path: "/var/lib/peachcloud/peach-dyndns/tsig.key".to_string(),
-    };
-
-    set_peach_dyndns_config(new_peach_dyndns_config);
-    set_config_test_value("sky is here");
-
-    Ok(())
 }

@@ -4,10 +4,6 @@
 //! the domain for dyndns updates is stored in /var/lib/peachcloud/config.yml
 //! the tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
 use log::{debug, info};
-use reqwest::blocking::Client;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -19,7 +15,6 @@ use crate::config::{set_peach_dyndns_config, PeachDynDnsConfig};
 use crate::error::PeachError;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
-use serde_json::Value;
 
 pub const PEACH_DYNDNS_URL: &str = "http://dynserver.dyn.peachcloud.org";
 pub const TSIG_KEY_PATH: &str = "/var/lib/peachcloud/peach-dyndns/tsig.key";
@@ -106,26 +101,3 @@ jsonrpc_client!(pub struct PeachDynDnsClient {
     pub fn is_domain_available(&mut self, domain: &str) -> RpcRequest<String>;
 });
 
-// main fn for testing
-fn main() -> () {
-    // initalize the logger
-    env_logger::init();
-
-    let test_domain = "newquartet10.dyn.peachcloud.org";
-
-    let result = register_domain(test_domain);
-
-    match result {
-        Ok(key) => println!("returned key: {:?}", key),
-        Err(err) => println!("err: {:?}", err),
-    }
-
-    let test_domain = "newquartet10.dyn.peachcloud.org";
-    let result = is_domain_available(test_domain);
-    match result {
-        Ok(r) => println!("is available: {:?}", r),
-        Err(err) => println!("err: {:?}", err),
-    }
-
-    ()
-}
