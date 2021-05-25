@@ -52,7 +52,9 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
     let res = client.register_domain(&domain).call();
     match res {
         Ok(key) => {
+            // save new TSIG key
             save_dyndns_key(&key);
+            // save new configuration values
             let new_peach_dyn_dns_config = PeachDynDnsConfig {
                 domain: domain.to_string(),
                 dns_server_address: PEACH_DYNDNS_URL.to_string(),

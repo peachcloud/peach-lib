@@ -26,21 +26,20 @@ pub struct PeachDynDnsConfig {
 // helper functions for serializing and deserializing PeachConfig from disc
 fn save_peach_config(peach_config: PeachConfig) -> Result<PeachConfig, serde_yaml::Error> {
     let yaml_str = serde_yaml::to_string(&peach_config)?;
-    println!("{:?}", yaml_str);
 
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
         .open(YAML_PATH)
-        .expect(&format!("failed to open {}", YAML_PATH));
+        .unwrap_or_else(|_| panic!("failed to open {}", YAML_PATH));
 
-    writeln!(file, "{}", yaml_str).expect(&format!("failed to write to {}", YAML_PATH));
+    writeln!(file, "{}", yaml_str).unwrap_or_else(|_| panic!("failed to write to {}", YAML_PATH));
 
     Ok(peach_config)
 }
 
 fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
-    let peach_config_exists = std::path::Path::new(&format!("{}", YAML_PATH)).exists();
+    let peach_config_exists = std::path::Path::new(YAML_PATH).exists();
 
     let peach_config: PeachConfig;
 
@@ -58,8 +57,8 @@ fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
     }
     // otherwise we load peach config from disk
     else {
-        let contents = fs::read_to_string(&format!("{}", YAML_PATH))
-            .expect(&format!("failed to read {}", YAML_PATH));
+        let contents = fs::read_to_string(YAML_PATH)
+             .unwrap_or_else(|_| panic!("failed to read {}", YAML_PATH));
         peach_config = serde_yaml::from_str(&contents)?;
     }
 
