@@ -58,7 +58,7 @@ fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
     // otherwise we load peach config from disk
     else {
         let contents = fs::read_to_string(YAML_PATH)
-             .unwrap_or_else(|_| panic!("failed to read {}", YAML_PATH));
+            .unwrap_or_else(|_| panic!("failed to read {}", YAML_PATH));
         peach_config = serde_yaml::from_str(&contents)?;
     }
 
