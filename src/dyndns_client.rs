@@ -1,8 +1,11 @@
-//! Make HTTP requests to the `peach-dyndns-server` API which runs on the peach-vps.
-//! if the requests are successful, configurations are saved locally on peachcloud appropriately
+//! Client which makes jsonrpc requests via HTTP to the `peach-dyndns-server` API which runs on the peach-vps.
+//! Note this is the one service in peach-lib which makes requests to an external server off of the local device.
 //!
-//! the domain for dyndns updates is stored in /var/lib/peachcloud/config.yml
-//! the tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
+//! If the requests are successful, dyndns configurations are saved locally on the PeachCloud device,
+//! which are then used by the peach-dyndns-cronjob to update the dynamic IP using nsupdate.
+//!
+//! The domain for dyndns updates is stored in /var/lib/peachcloud/config.yml
+//! The tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
 use log::{debug, info};
 use std::fs;
 use std::fs::OpenOptions;
@@ -16,6 +19,7 @@ use crate::error::PeachError;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 
+// constants for dyndns configuration
 pub const PEACH_DYNDNS_URL: &str = "http://dynserver.dyn.peachcloud.org";
 pub const TSIG_KEY_PATH: &str = "/var/lib/peachcloud/peach-dyndns/tsig.key";
 pub const PEACH_DYNDNS_CONFIG_PATH: &str = "/var/lib/peachcloud/peach-dyndns";

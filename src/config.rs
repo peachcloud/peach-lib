@@ -1,4 +1,6 @@
-//! Interfaces for writing and reading peachcloud configurations, stored in yaml.
+//! Interfaces for writing and reading PeachCloud configurations, stored in yaml.
+//!
+//! Different PeachCloud microservices import peach-lib, so that they can share this interface.
 //!
 //! The configuration file is located at: "/var/lib/peachcloud/config.yml"
 
@@ -7,6 +9,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
 
+// main configuration file
 pub const YAML_PATH: &str = "/var/lib/peachcloud/config.yml";
 
 // main type which represents all peachcloud configurations
