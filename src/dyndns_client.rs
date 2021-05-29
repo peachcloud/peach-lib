@@ -14,7 +14,7 @@ use std::str::FromStr;
 use std::str::ParseBoolError;
 pub mod config;
 pub mod error;
-use crate::config::{set_peach_dyndns_config, PeachDynDnsConfig};
+use crate::config_manager::{set_peach_dyndns_config, PeachDynDnsConfig};
 use crate::error::PeachError;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
