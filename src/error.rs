@@ -6,6 +6,7 @@ pub enum PeachError {
     Serde(serde_json::error::Error),
     ParseBoolError(std::str::ParseBoolError),
     SetConfigError(serde_yaml::Error),
+    YamlError(serde_yaml::Error),
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {
@@ -23,5 +24,11 @@ impl From<jsonrpc_client_core::Error> for PeachError {
 impl From<serde_json::error::Error> for PeachError {
     fn from(err: serde_json::error::Error) -> PeachError {
         PeachError::Serde(err)
+    }
+}
+
+impl From<serde_yaml::Error> for PeachError {
+    fn from(err: serde_yaml::Error) -> PeachError {
+        PeachError::YamlError(err)
     }
 }

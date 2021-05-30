@@ -4,20 +4,22 @@
 //! If the requests are successful, dyndns configurations are saved locally on the PeachCloud device,
 //! which are then used by the peach-dyndns-cronjob to update the dynamic IP using nsupdate.
 //!
+//! There is also one function in this file, dyndns_update_ip, which doesn't interact with the jsonrpc server.
+//! This function uses nsupdate to actually update dns records directly.
+//!
 //! The domain for dyndns updates is stored in /var/lib/peachcloud/config.yml
 //! The tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
+use crate::config_manager::{load_peach_config, set_peach_dyndns_config, PeachDynDnsConfig};
+use crate::error::PeachError;
+use jsonrpc_client_core::{expand_params, jsonrpc_client};
+use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::process::{Command, Stdio};
 use std::str::FromStr;
 use std::str::ParseBoolError;
-pub mod config;
-pub mod error;
-use crate::config_manager::{set_peach_dyndns_config, PeachDynDnsConfig};
-use crate::error::PeachError;
-use jsonrpc_client_core::{expand_params, jsonrpc_client};
-use jsonrpc_client_http::HttpTransport;
 
 // constants for dyndns configuration
 pub const PEACH_DYNDNS_URL: &str = "http://dynserver.dyn.peachcloud.org";
@@ -63,6 +65,7 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
                 domain: domain.to_string(),
                 dns_server_address: PEACH_DYNDNS_URL.to_string(),
                 tsig_key_path: TSIG_KEY_PATH.to_string(),
+                enabled: true,
             };
             let set_config_result = set_peach_dyndns_config(new_peach_dyn_dns_config);
             match set_config_result {
@@ -102,8 +105,55 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
     }
 }
 
+// reads dyndns configurations from config.yml
+// and then uses nsupdate to update the IP address for the configured domain
+pub fn dyndns_update_ip() -> Result<bool, PeachError> {
+    info!("Running dyndns cronjob");
+    let peach_config = load_peach_config()?;
+    // TODO: print warning if there was an error here loading the config
+    let dyndns_config = peach_config.peach_dyndns;
+    info!(
+        "Using config:
+    tsig_key_path: {:?}
+    domain: {:?}
+    dyndns_server_address: {:?}
+    enabled: {:?}
+    ",
+        dyndns_config.tsig_key_path,
+        dyndns_config.domain,
+        dyndns_config.dns_server_address,
+        dyndns_config.enabled,
+    );
+    if !dyndns_config.enabled {
+        Ok(false)
+    } else {
+        // call nsupdate passing appropriate configs
+        let nsupdate_command = Command::new("/usr/bin/nsupdate")
+            .arg("-k")
+            .arg(dyndns_config.tsig_key_path)
+            .arg("-v")
+            .stdin(Stdio::piped())
+            .spawn().unwrap();
+        // pass nsupdate commands via stdin
+        // TODO: put actual IP here
+        let ns_commands = format!("
+        server {NAMESERVER}
+        zone {ZONE}
+        update delete {DOMAIN} A
+        update add {DOMAIN} 30 A 1.1.1.8
+        send", NAMESERVER = "ns.peachcloud.org", ZONE=dyndns_config.domain,
+        DOMAIN=dyndns_config.domain);
+        write!(nsupdate_command.stdin.as_ref().unwrap(), "{}", ns_commands).unwrap();
+        let nsupdate_output = nsupdate_command.wait_with_output()
+                 .expect("failed to wait on child");
+        // TODO: if successful, write success message to status log
+        // if error, write error message to status log
+        info!("output: {:?}", nsupdate_output);
+        Ok(nsupdate_output.status.success())
+    }
+}
+
 jsonrpc_client!(pub struct PeachDynDnsClient {
     pub fn register_domain(&mut self, domain: &str) -> RpcRequest<String>;
     pub fn is_domain_available(&mut self, domain: &str) -> RpcRequest<String>;
 });
-
