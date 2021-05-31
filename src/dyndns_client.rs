@@ -133,19 +133,25 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             .arg(dyndns_config.tsig_key_path)
             .arg("-v")
             .stdin(Stdio::piped())
-            .spawn().unwrap();
+            .spawn()
+            .unwrap();
         // pass nsupdate commands via stdin
         // TODO: put actual IP here
-        let ns_commands = format!("
+        let ns_commands = format!(
+            "
         server {NAMESERVER}
         zone {ZONE}
         update delete {DOMAIN} A
         update add {DOMAIN} 30 A 1.1.1.8
-        send", NAMESERVER = "ns.peachcloud.org", ZONE=dyndns_config.domain,
-        DOMAIN=dyndns_config.domain);
+        send",
+            NAMESERVER = "ns.peachcloud.org",
+            ZONE = dyndns_config.domain,
+            DOMAIN = dyndns_config.domain
+        );
         write!(nsupdate_command.stdin.as_ref().unwrap(), "{}", ns_commands).unwrap();
-        let nsupdate_output = nsupdate_command.wait_with_output()
-                 .expect("failed to wait on child");
+        let nsupdate_output = nsupdate_command
+            .wait_with_output()
+            .expect("failed to wait on child");
         // TODO: if successful, write success message to status log
         // if error, write error message to status log
         info!("output: {:?}", nsupdate_output);

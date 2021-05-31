@@ -32,19 +32,18 @@ pub struct PeachDynDnsConfig {
     pub dns_server_address: String,
     #[serde(default)]
     pub tsig_key_path: String,
-    #[serde(default)]  // default is false
+    #[serde(default)] // default is false
     pub enabled: bool,
 }
 
 pub fn default_dyndns_config() -> PeachDynDnsConfig {
-    PeachDynDnsConfig{
+    PeachDynDnsConfig {
         domain: "".to_string(),
         dns_server_address: "".to_string(),
         tsig_key_path: "".to_string(),
-        enabled: false
+        enabled: false,
     }
 }
-
 
 // helper functions for serializing and deserializing PeachConfig from disc
 fn save_peach_config(peach_config: PeachConfig) -> Result<PeachConfig, serde_yaml::Error> {
@@ -103,4 +102,3 @@ pub fn set_config_test_value(new_test_value: &str) -> Result<PeachConfig, serde_
     peach_config.test = new_test_value.to_string();
     save_peach_config(peach_config)
 }
-
