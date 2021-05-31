@@ -31,14 +31,14 @@ pub const DYNDNS_LOG_PATH: &str = "/var/lib/peachcloud/peach-dyndns/latest_resul
 pub fn save_dyndns_key(key: &str) {
     // create directory if it doesn't exist
     fs::create_dir_all(PEACH_DYNDNS_CONFIG_PATH)
-        .expect(&format!("Failed to create: {}", PEACH_DYNDNS_CONFIG_PATH));
+        .unwrap_or_else(|_| panic!("Failed to create: {}", PEACH_DYNDNS_CONFIG_PATH));
     // write key text
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
         .open(TSIG_KEY_PATH)
         .expect(&format!("failed to open {}", TSIG_KEY_PATH));
-    writeln!(file, "{}", key).expect(&format!("Couldn't write to file: {}", TSIG_KEY_PATH));
+    writeln!(file, "{}", key).unwrap_or_else(|_| panic!("Couldn't write to file: {}", TSIG_KEY_PATH));
 }
 
 /// Makes a post request to register a new domain with peach-dyns-server
