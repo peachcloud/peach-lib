@@ -37,8 +37,9 @@ pub fn save_dyndns_key(key: &str) {
         .write(true)
         .create(true)
         .open(TSIG_KEY_PATH)
-        .expect(&format!("failed to open {}", TSIG_KEY_PATH));
-    writeln!(file, "{}", key).unwrap_or_else(|_| panic!("Couldn't write to file: {}", TSIG_KEY_PATH));
+        .unwrap_or_else(|_| panic!("failed to open {}", TSIG_KEY_PATH));
+    writeln!(file, "{}", key)
+        .unwrap_or_else(|_| panic!("Couldn't write to file: {}", TSIG_KEY_PATH));
 }
 
 /// Makes a post request to register a new domain with peach-dyns-server
