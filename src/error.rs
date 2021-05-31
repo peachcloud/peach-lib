@@ -6,6 +6,7 @@ pub enum PeachError {
     Serde(serde_json::error::Error),
     ParseBoolError(std::str::ParseBoolError),
     SetConfigError(serde_yaml::Error),
+    NsUpdateError(String),
     YamlError(serde_yaml::Error),
 }
 

@@ -21,13 +21,13 @@ use std::process::{Command, Stdio};
 use std::str::FromStr;
 use std::str::ParseBoolError;
 
-// constants for dyndns configuration
+/// constants for dyndns configuration
 pub const PEACH_DYNDNS_URL: &str = "http://dynserver.dyn.peachcloud.org";
 pub const TSIG_KEY_PATH: &str = "/var/lib/peachcloud/peach-dyndns/tsig.key";
 pub const PEACH_DYNDNS_CONFIG_PATH: &str = "/var/lib/peachcloud/peach-dyndns";
 pub const DYNDNS_LOG_PATH: &str = "/var/lib/peachcloud/peach-dyndns/latest_result.log";
 
-// helper function which saves dyndns TSIG key returned by peach-dyndns-server to /var/lib/peachcloud/peach-dyndns/tsig.key
+/// helper function which saves dyndns TSIG key returned by peach-dyndns-server to /var/lib/peachcloud/peach-dyndns/tsig.key
 pub fn save_dyndns_key(key: &str) {
     // create directory if it doesn't exist
     fs::create_dir_all(PEACH_DYNDNS_CONFIG_PATH)
@@ -106,12 +106,21 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
     }
 }
 
-// reads dyndns configurations from config.yml
-// and then uses nsupdate to update the IP address for the configured domain
+/// Helper function to get public ip address of PeachCloud device.
+fn get_public_ip_address() -> String {
+    // TODO: consider other ways to get public IP address
+    let output = Command::new("/usr/bin/curl")
+        .arg("ifconfig.me")
+        .output().expect("failed to get public IP");
+    let command_output = std::str::from_utf8(&output.stdout).expect("Incorrect format");
+    command_output.to_string()
+}
+
+/// Reads dyndns configurations from config.yml
+/// and then uses nsupdate to update the IP address for the configured domain
 pub fn dyndns_update_ip() -> Result<bool, PeachError> {
     info!("Running dyndns cronjob");
     let peach_config = load_peach_config()?;
-    // TODO: print warning if there was an error here loading the config
     let dyndns_config = peach_config.peach_dyndns;
     info!(
         "Using config:
@@ -137,26 +146,34 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             .spawn()
             .unwrap();
         // pass nsupdate commands via stdin
-        // TODO: put actual IP here
+        let public_ip_address = get_public_ip_address();
+        info!("found public ip address: {}", public_ip_address);
         let ns_commands = format!(
             "
         server {NAMESERVER}
         zone {ZONE}
         update delete {DOMAIN} A
-        update add {DOMAIN} 30 A 1.1.1.8
+        update add {DOMAIN} 30 A {PUBLIC_IP_ADDRESS}
         send",
             NAMESERVER = "ns.peachcloud.org",
             ZONE = dyndns_config.domain,
-            DOMAIN = dyndns_config.domain
+            DOMAIN = dyndns_config.domain,
+            PUBLIC_IP_ADDRESS = public_ip_address,
         );
         write!(nsupdate_command.stdin.as_ref().unwrap(), "{}", ns_commands).unwrap();
         let nsupdate_output = nsupdate_command
             .wait_with_output()
             .expect("failed to wait on child");
-        // TODO: if successful, write success message to status log
-        // if error, write error message to status log
         info!("output: {:?}", nsupdate_output);
-        Ok(nsupdate_output.status.success())
+        // We only return a successful result if nsupdate was successful
+        if nsupdate_output.status.success() {
+            info!("nsupdate succeeded, returning ok");
+            Ok(true)
+        } else {
+            info!("nsupdate failed, returning error");
+            let err_msg = String::from_utf8(nsupdate_output.stdout).expect("failed to read stdout from nsupdate");
+            Err(PeachError::NsUpdateError(err_msg))
+        }
     }
 }
 
