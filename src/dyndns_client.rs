@@ -111,7 +111,8 @@ fn get_public_ip_address() -> String {
     // TODO: consider other ways to get public IP address
     let output = Command::new("/usr/bin/curl")
         .arg("ifconfig.me")
-        .output().expect("failed to get public IP");
+        .output()
+        .expect("failed to get public IP");
     let command_output = std::str::from_utf8(&output.stdout).expect("Incorrect format");
     command_output.to_string()
 }
@@ -135,6 +136,7 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
         dyndns_config.enabled,
     );
     if !dyndns_config.enabled {
+        info!("dyndns is not enabled, not updating");
         Ok(false)
     } else {
         // call nsupdate passing appropriate configs
@@ -171,7 +173,8 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             Ok(true)
         } else {
             info!("nsupdate failed, returning error");
-            let err_msg = String::from_utf8(nsupdate_output.stdout).expect("failed to read stdout from nsupdate");
+            let err_msg = String::from_utf8(nsupdate_output.stdout)
+                .expect("failed to read stdout from nsupdate");
             Err(PeachError::NsUpdateError(err_msg))
         }
     }
