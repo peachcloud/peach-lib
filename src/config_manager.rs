@@ -22,6 +22,8 @@ pub struct PeachConfig {
     pub peach_dyndns: PeachDynDnsConfig,
     #[serde(default)]
     pub test: String,
+    #[serde(default)]
+    pub external_domain: String,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -75,6 +77,7 @@ pub fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
         };
         peach_config = PeachConfig {
             test: "xyz".to_string(),
+            external_domain: "".to_string(),
             peach_dyndns: peach_dyndns_config,
         };
     }
@@ -100,5 +103,11 @@ pub fn set_peach_dyndns_config(
 pub fn set_config_test_value(new_test_value: &str) -> Result<PeachConfig, serde_yaml::Error> {
     let mut peach_config = load_peach_config().unwrap();
     peach_config.test = new_test_value.to_string();
+    save_peach_config(peach_config)
+}
+
+pub fn set_external_domain(new_external_domain: &str) -> Result<PeachConfig, serde_yaml::Error> {
+    let mut peach_config = load_peach_config().unwrap();
+    peach_config.external_domain = new_external_domain.to_string();
     save_peach_config(peach_config)
 }
