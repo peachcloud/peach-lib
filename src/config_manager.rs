@@ -111,3 +111,10 @@ pub fn set_external_domain(new_external_domain: &str) -> Result<PeachConfig, ser
     peach_config.external_domain = new_external_domain.to_string();
     save_peach_config(peach_config)
 }
+
+pub fn set_dyndns_enabled_value(enabled_value: bool) -> Result<PeachConfig, serde_yaml::Error> {
+    let mut peach_config = load_peach_config().unwrap();
+    let mut dyndns_config = peach_config.peach_dyndns;
+    dyndns_config.enabled = enabled_value;
+    set_peach_dyndns_config(dyndns_config)
+}
