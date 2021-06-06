@@ -52,7 +52,7 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
     let http_server = PEACH_DYNDNS_URL;
     debug!("Creating HTTP transport handle on {}.", http_server);
     let transport_handle = transport.handle(&http_server)?;
-    info!("Creating client for peach_network service.");
+    info!("Creating client for peach-dyndns service.");
     let mut client = PeachDynDnsClient::new(transport_handle);
 
     info!("Performing register_domain call to peach-dyndns-server");

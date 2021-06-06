@@ -22,6 +22,8 @@ pub struct PeachConfig {
     pub peach_dyndns: PeachDynDnsConfig,
     #[serde(default)]
     pub test: String,
+    #[serde(default)]
+    pub external_domain: String,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -68,13 +70,14 @@ pub fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
     // if this is the first time loading peach_config, we can create a default here
     if !peach_config_exists {
         let peach_dyndns_config = PeachDynDnsConfig {
-            domain: "test.dyn.peachcloud.org".to_string(),
+            domain: "".to_string(),
             dns_server_address: "dynserver.dyn.peachcloud.org".to_string(),
             tsig_key_path: "/var/lib/peachcloud/peach-dyndns/tsig.key".to_string(),
             enabled: false,
         };
         peach_config = PeachConfig {
             test: "xyz".to_string(),
+            external_domain: "".to_string(),
             peach_dyndns: peach_dyndns_config,
         };
     }
@@ -101,4 +104,17 @@ pub fn set_config_test_value(new_test_value: &str) -> Result<PeachConfig, serde_
     let mut peach_config = load_peach_config().unwrap();
     peach_config.test = new_test_value.to_string();
     save_peach_config(peach_config)
+}
+
+pub fn set_external_domain(new_external_domain: &str) -> Result<PeachConfig, serde_yaml::Error> {
+    let mut peach_config = load_peach_config().unwrap();
+    peach_config.external_domain = new_external_domain.to_string();
+    save_peach_config(peach_config)
+}
+
+pub fn set_dyndns_enabled_value(enabled_value: bool) -> Result<PeachConfig, serde_yaml::Error> {
+    let peach_config = load_peach_config().unwrap();
+    let mut dyndns_config = peach_config.peach_dyndns;
+    dyndns_config.enabled = enabled_value;
+    set_peach_dyndns_config(dyndns_config)
 }
