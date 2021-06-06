@@ -70,7 +70,7 @@ pub fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
     // if this is the first time loading peach_config, we can create a default here
     if !peach_config_exists {
         let peach_dyndns_config = PeachDynDnsConfig {
-            domain: "test.dyn.peachcloud.org".to_string(),
+            domain: "".to_string(),
             dns_server_address: "dynserver.dyn.peachcloud.org".to_string(),
             tsig_key_path: "/var/lib/peachcloud/peach-dyndns/tsig.key".to_string(),
             enabled: false,
