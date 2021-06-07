@@ -1,13 +1,15 @@
-//! Basic error handling for the network, OLED and stats JSON-RPC clients.
+//! Basic error handling for the network, OLED, stats and dyndns JSON-RPC clients.
 #[derive(Debug)]
 pub enum PeachError {
     JsonRpcHttp(jsonrpc_client_http::Error),
-    JsonRpcCore(jsonrpc_client_core::Error),
+    JsonRpcClientCore(jsonrpc_client_core::Error),
     Serde(serde_json::error::Error),
     ParseBoolError(std::str::ParseBoolError),
     SetConfigError(serde_yaml::Error),
     NsUpdateError(String),
     YamlError(serde_yaml::Error),
+    DuplicateDynDomain(String),
+    JsonRpcCore(jsonrpc_core::Error),
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {
@@ -18,7 +20,7 @@ impl From<jsonrpc_client_http::Error> for PeachError {
 
 impl From<jsonrpc_client_core::Error> for PeachError {
     fn from(err: jsonrpc_client_core::Error) -> PeachError {
-        PeachError::JsonRpcCore(err)
+        PeachError::JsonRpcClientCore(err)
     }
 }
 

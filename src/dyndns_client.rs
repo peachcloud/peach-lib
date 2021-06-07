@@ -77,7 +77,9 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
                 Err(err) => Err(PeachError::SetConfigError(err)),
             }
         }
-        Err(err) => Err(PeachError::JsonRpcCore(err)),
+        Err(err) => {
+            Err(PeachError::JsonRpcClientCore(err))
+        },
     }
 }
 
@@ -102,7 +104,7 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
                 Err(err) => Err(PeachError::ParseBoolError(err)),
             }
         }
-        Err(err) => Err(PeachError::JsonRpcCore(err)),
+        Err(err) => Err(PeachError::JsonRpcClientCore(err)),
     }
 }
 
