@@ -8,7 +8,6 @@ pub enum PeachError {
     SetConfigError(serde_yaml::Error),
     NsUpdateError(String),
     YamlError(serde_yaml::Error),
-    DuplicateDynDomain(String),
     JsonRpcCore(jsonrpc_core::Error),
 }
 

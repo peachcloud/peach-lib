@@ -77,9 +77,7 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
                 Err(err) => Err(PeachError::SetConfigError(err)),
             }
         }
-        Err(err) => {
-            Err(PeachError::JsonRpcClientCore(err))
-        },
+        Err(err) => Err(PeachError::JsonRpcClientCore(err)),
     }
 }
 
