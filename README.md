@@ -1,6 +1,6 @@
 # peach-lib
 
-![Generic badge](https://img.shields.io/badge/version-1.2.4-<COLOR>.svg)
+![Generic badge](https://img.shields.io/badge/version-1.2.5-<COLOR>.svg)
 
 JSON-RPC client library for the PeachCloud ecosystem.
 

@@ -9,7 +9,7 @@
 //!
 //! The domain for dyndns updates is stored in /var/lib/peachcloud/config.yml
 //! The tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
-use crate::config_manager::{load_peach_config, set_peach_dyndns_config, PeachDynDnsConfig};
+use crate::config_manager::{load_peach_config, set_peach_dyndns_config};
 use crate::error::PeachError;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
@@ -62,13 +62,12 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
             // save new TSIG key
             save_dyndns_key(&key);
             // save new configuration values
-            let new_peach_dyn_dns_config = PeachDynDnsConfig {
-                domain: domain.to_string(),
-                dns_server_address: PEACH_DYNDNS_URL.to_string(),
-                tsig_key_path: TSIG_KEY_PATH.to_string(),
-                enabled: true,
-            };
-            let set_config_result = set_peach_dyndns_config(new_peach_dyn_dns_config);
+            let set_config_result = set_peach_dyndns_config(
+                domain,
+                PEACH_DYNDNS_URL,
+                TSIG_KEY_PATH,
+                true
+            );
             match set_config_result {
                 Ok(_) => {
                     let response = "success".to_string();
@@ -120,29 +119,28 @@ fn get_public_ip_address() -> String {
 /// Reads dyndns configurations from config.yml
 /// and then uses nsupdate to update the IP address for the configured domain
 pub fn dyndns_update_ip() -> Result<bool, PeachError> {
-    info!("Running dyndns cronjob");
+    info!("Running dyndns_update_ip");
     let peach_config = load_peach_config()?;
-    let dyndns_config = peach_config.peach_dyndns;
     info!(
         "Using config:
-    tsig_key_path: {:?}
-    domain: {:?}
-    dyndns_server_address: {:?}
-    enabled: {:?}
+    dyn_tsig_key_path: {:?}
+    dyn_domain: {:?}
+    dyn_dns_server_address: {:?}
+    dyn_enabled: {:?}
     ",
-        dyndns_config.tsig_key_path,
-        dyndns_config.domain,
-        dyndns_config.dns_server_address,
-        dyndns_config.enabled,
+        peach_config.dyn_tsig_key_path,
+        peach_config.dyn_domain,
+        peach_config.dyn_dns_server_address,
+        peach_config.dyn_enabled,
     );
-    if !dyndns_config.enabled {
+    if !peach_config.dyn_enabled {
         info!("dyndns is not enabled, not updating");
         Ok(false)
     } else {
         // call nsupdate passing appropriate configs
         let nsupdate_command = Command::new("/usr/bin/nsupdate")
             .arg("-k")
-            .arg(dyndns_config.tsig_key_path)
+            .arg(peach_config.dyn_tsig_key_path)
             .arg("-v")
             .stdin(Stdio::piped())
             .spawn()
@@ -158,8 +156,8 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
         update add {DOMAIN} 30 A {PUBLIC_IP_ADDRESS}
         send",
             NAMESERVER = "ns.peachcloud.org",
-            ZONE = dyndns_config.domain,
-            DOMAIN = dyndns_config.domain,
+            ZONE = peach_config.dyn_domain,
+            DOMAIN = peach_config.dyn_domain,
             PUBLIC_IP_ADDRESS = public_ip_address,
         );
         write!(nsupdate_command.stdin.as_ref().unwrap(), "{}", ns_commands).unwrap();
