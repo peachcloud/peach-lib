@@ -36,6 +36,12 @@ pub enum PeachError {
     NsUpdateError { msg: String },
     #[snafu(display("Failed to run nsupdate: {}", source))]
     NsCommandError { source: std::io::Error },
+    #[snafu(display("Failed to get public IP address: {}", source))]
+    GetPublicIpError { source: std::io::Error },
+    #[snafu(display("Failed to decode public ip: {}", source))]
+    DecodePublicIpError { source: std::str::Utf8Error },
+    #[snafu(display("Failed to decode nsupdate output: {}", source))]
+    DecodeNsUpdateOutputError { source: std::string::FromUtf8Error },
     #[snafu(display("{}", source))]
     YamlError { source: serde_yaml::Error },
     #[snafu(display("{:?}", err))]

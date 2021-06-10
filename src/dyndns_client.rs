@@ -107,14 +107,14 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
 }
 
 /// Helper function to get public ip address of PeachCloud device.
-fn get_public_ip_address() -> String {
+fn get_public_ip_address() -> Result<String, PeachError> {
     // TODO: consider other ways to get public IP address
     let output = Command::new("/usr/bin/curl")
         .arg("ifconfig.me")
         .output()
-        .expect("failed to get public IP");
-    let command_output = std::str::from_utf8(&output.stdout).expect("Incorrect format");
-    command_output.to_string()
+        .context(GetPublicIpError)?;
+    let command_output = std::str::from_utf8(&output.stdout).context(DecodePublicIpError)?;
+    Ok(command_output.to_string())
 }
 
 /// Reads dyndns configurations from config.yml
@@ -143,11 +143,11 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             .arg("-k")
             .arg(peach_config.dyn_tsig_key_path)
             .arg("-v")
-            .stdin(Stdio::piped
-                ())
-            .spawn().context(NsCommandError)?;
+            .stdin(Stdio::piped())
+            .spawn()
+            .context(NsCommandError)?;
         // pass nsupdate commands via stdin
-        let public_ip_address = get_public_ip_address();
+        let public_ip_address = get_public_ip_address()?;
         info!("found public ip address: {}", public_ip_address);
         let ns_commands = format!(
             "
@@ -163,8 +163,7 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
         );
         write!(nsupdate_command.stdin.as_ref().unwrap(), "{}", ns_commands).unwrap();
         let nsupdate_output = nsupdate_command
-            .wait_with_output()
-            .expect("failed to wait on child");
+            .wait_with_output().context(NsCommandError)?;
         info!("output: {:?}", nsupdate_output);
         // We only return a successful result if nsupdate was successful
         if nsupdate_output.status.success() {
@@ -172,8 +171,7 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             Ok(true)
         } else {
             info!("nsupdate failed, returning error");
-            let err_msg = String::from_utf8(nsupdate_output.stdout)
-                .expect("failed to read stdout from nsupdate");
+            let err_msg = String::from_utf8(nsupdate_output.stdout).context(DecodeNsUpdateOutputError)?;
             Err(PeachError::NsUpdateError { msg: err_msg })
         }
     }
