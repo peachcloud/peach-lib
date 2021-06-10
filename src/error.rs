@@ -34,6 +34,8 @@ pub enum PeachError {
     },
     #[snafu(display("{}", msg))]
     NsUpdateError { msg: String },
+    #[snafu(display("Failed to run nsupdate: {}", source))]
+    NsCommandError { source: std::io::Error },
     #[snafu(display("{}", source))]
     YamlError { source: serde_yaml::Error },
     #[snafu(display("{:?}", err))]

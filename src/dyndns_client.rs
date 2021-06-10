@@ -143,9 +143,9 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             .arg("-k")
             .arg(peach_config.dyn_tsig_key_path)
             .arg("-v")
-            .stdin(Stdio::piped())
-            .spawn()
-            .unwrap();
+            .stdin(Stdio::piped
+                ())
+            .spawn().context(NsCommandError)?;
         // pass nsupdate commands via stdin
         let public_ip_address = get_public_ip_address();
         info!("found public ip address: {}", public_ip_address);
