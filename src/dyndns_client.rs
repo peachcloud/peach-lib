@@ -30,13 +30,20 @@ pub const DYNDNS_LOG_PATH: &str = "/var/lib/peachcloud/peach-dyndns/latest_resul
 /// helper function which saves dyndns TSIG key returned by peach-dyndns-server to /var/lib/peachcloud/peach-dyndns/tsig.key
 pub fn save_dyndns_key(key: &str) -> Result<(), PeachError> {
     // create directory if it doesn't exist
-    fs::create_dir_all(PEACH_DYNDNS_CONFIG_PATH).context(SaveTsigKeyError {path: PEACH_DYNDNS_CONFIG_PATH.to_string()})?;
+    fs::create_dir_all(PEACH_DYNDNS_CONFIG_PATH).context(SaveTsigKeyError {
+        path: PEACH_DYNDNS_CONFIG_PATH.to_string(),
+    })?;
     // write key text
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
-        .open(TSIG_KEY_PATH).context(SaveTsigKeyError{path: TSIG_KEY_PATH.to_string()})?;
-    writeln!(file, "{}", key).context(SaveTsigKeyError{path: TSIG_KEY_PATH.to_string()})?;
+        .open(TSIG_KEY_PATH)
+        .context(SaveTsigKeyError {
+            path: TSIG_KEY_PATH.to_string(),
+        })?;
+    writeln!(file, "{}", key).context(SaveTsigKeyError {
+        path: TSIG_KEY_PATH.to_string(),
+    })?;
     Ok(())
 }
 
@@ -70,7 +77,7 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
                 Err(err) => Err(err),
             }
         }
-        Err(err) => Err(PeachError::JsonRpcClientCore{source: err}),
+        Err(err) => Err(PeachError::JsonRpcClientCore { source: err }),
     }
 }
 
@@ -92,10 +99,10 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
             let result: Result<bool, ParseBoolError> = FromStr::from_str(&result_str);
             match result {
                 Ok(result_bool) => Ok(result_bool),
-                Err(err) => Err(PeachError::ParseBoolError{source: err}),
+                Err(err) => Err(PeachError::ParseBoolError { source: err }),
             }
         }
-        Err(err) => Err(PeachError::JsonRpcClientCore{ source: err}),
+        Err(err) => Err(PeachError::JsonRpcClientCore { source: err }),
     }
 }
 
@@ -167,7 +174,7 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             info!("nsupdate failed, returning error");
             let err_msg = String::from_utf8(nsupdate_output.stdout)
                 .expect("failed to read stdout from nsupdate");
-            Err(PeachError::NsUpdateError{ msg: err_msg})
+            Err(PeachError::NsUpdateError { msg: err_msg })
         }
     }
 }

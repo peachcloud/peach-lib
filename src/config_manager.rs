@@ -39,9 +39,14 @@ fn save_peach_config(peach_config: PeachConfig) -> Result<PeachConfig, PeachErro
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
-        .open(YAML_PATH).context(ReadConfigError{ file: YAML_PATH.to_string() })?;
+        .open(YAML_PATH)
+        .context(ReadConfigError {
+            file: YAML_PATH.to_string(),
+        })?;
 
-    writeln!(file, "{}", yaml_str).context(WriteConfigError{ file: YAML_PATH.to_string()})?;
+    writeln!(file, "{}", yaml_str).context(WriteConfigError {
+        file: YAML_PATH.to_string(),
+    })?;
 
     Ok(peach_config)
 }
@@ -63,7 +68,9 @@ pub fn load_peach_config() -> Result<PeachConfig, PeachError> {
     }
     // otherwise we load peach config from disk
     else {
-        let contents = fs::read_to_string(YAML_PATH).context(ReadConfigError{ file: YAML_PATH.to_string() })?;
+        let contents = fs::read_to_string(YAML_PATH).context(ReadConfigError {
+            file: YAML_PATH.to_string(),
+        })?;
         peach_config = serde_yaml::from_str(&contents)?;
     }
 
