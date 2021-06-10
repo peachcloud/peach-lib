@@ -9,6 +9,9 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
 
+use crate::error::PeachError;
+use crate::error::*;
+
 // main configuration file
 pub const YAML_PATH: &str = "/var/lib/peachcloud/config.yml";
 
@@ -30,21 +33,20 @@ pub struct PeachConfig {
 }
 
 // helper functions for serializing and deserializing PeachConfig from disc
-fn save_peach_config(peach_config: PeachConfig) -> Result<PeachConfig, serde_yaml::Error> {
+fn save_peach_config(peach_config: PeachConfig) -> Result<PeachConfig, PeachError> {
     let yaml_str = serde_yaml::to_string(&peach_config)?;
 
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
-        .open(YAML_PATH)
-        .unwrap_or_else(|_| panic!("failed to open {}", YAML_PATH));
+        .open(YAML_PATH).context(ReadConfigError{ file: YAML_PATH.to_string() })?;
 
-    writeln!(file, "{}", yaml_str).unwrap_or_else(|_| panic!("failed to write to {}", YAML_PATH));
+    writeln!(file, "{}", yaml_str).context(WriteConfigError{ file: YAML_PATH.to_string()})?;
 
     Ok(peach_config)
 }
 
-pub fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
+pub fn load_peach_config() -> Result<PeachConfig, PeachError> {
     let peach_config_exists = std::path::Path::new(YAML_PATH).exists();
 
     let peach_config: PeachConfig;
@@ -56,13 +58,12 @@ pub fn load_peach_config() -> Result<PeachConfig, serde_yaml::Error> {
             dyn_domain: "".to_string(),
             dyn_dns_server_address: "".to_string(),
             dyn_tsig_key_path: "".to_string(),
-            dyn_enabled: false
+            dyn_enabled: false,
         };
     }
     // otherwise we load peach config from disk
     else {
-        let contents = fs::read_to_string(YAML_PATH)
-            .unwrap_or_else(|_| panic!("failed to read {}", YAML_PATH));
+        let contents = fs::read_to_string(YAML_PATH).context(ReadConfigError{ file: YAML_PATH.to_string() })?;
         peach_config = serde_yaml::from_str(&contents)?;
     }
 
@@ -74,9 +75,9 @@ pub fn set_peach_dyndns_config(
     dyn_domain: &str,
     dyn_dns_server_address: &str,
     dyn_tsig_key_path: &str,
-    dyn_enabled: bool
-) -> Result<PeachConfig, serde_yaml::Error> {
-    let mut peach_config = load_peach_config().unwrap();
+    dyn_enabled: bool,
+) -> Result<PeachConfig, PeachError> {
+    let mut peach_config = load_peach_config()?;
     peach_config.dyn_domain = dyn_domain.to_string();
     peach_config.dyn_dns_server_address = dyn_dns_server_address.to_string();
     peach_config.dyn_tsig_key_path = dyn_tsig_key_path.to_string();
@@ -84,15 +85,14 @@ pub fn set_peach_dyndns_config(
     save_peach_config(peach_config)
 }
 
-
-pub fn set_external_domain(new_external_domain: &str) -> Result<PeachConfig, serde_yaml::Error> {
-    let mut peach_config = load_peach_config().unwrap();
+pub fn set_external_domain(new_external_domain: &str) -> Result<PeachConfig, PeachError> {
+    let mut peach_config = load_peach_config()?;
     peach_config.external_domain = new_external_domain.to_string();
     save_peach_config(peach_config)
 }
 
-pub fn set_dyndns_enabled_value(enabled_value: bool) -> Result<PeachConfig, serde_yaml::Error> {
-    let mut peach_config = load_peach_config().unwrap();
+pub fn set_dyndns_enabled_value(enabled_value: bool) -> Result<PeachConfig, PeachError> {
+    let mut peach_config = load_peach_config()?;
     peach_config.dyn_enabled = enabled_value;
     save_peach_config(peach_config)
 }
