@@ -11,17 +11,17 @@
 //! The tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
 use crate::config_manager::{load_peach_config, set_peach_dyndns_config};
 use crate::error::*;
+use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
+use regex::Regex;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::str::FromStr;
 use std::str::ParseBoolError;
-use regex::Regex;
-use chrono::prelude::*;
 
 /// constants for dyndns configuration
 pub const PEACH_DYNDNS_URL: &str = "http://dynserver.dyn.peachcloud.org";
@@ -67,7 +67,7 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
     match res {
         Ok(key) => {
             // save new TSIG key
-            save_dyndns_key(&key);
+            save_dyndns_key(&key)?;
             // save new configuration values
             let set_config_result =
                 set_peach_dyndns_config(domain, PEACH_DYNDNS_URL, TSIG_KEY_PATH, true);
@@ -185,13 +185,13 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
 pub fn get_num_seconds_since_successful_dns_update() -> Result<Option<i64>, PeachError> {
     // use journalctl to get the most recent log from peach-dyndns-updater
     let output = Command::new("/usr/bin/journalctl")
-            .arg("-u")
-            .arg("peach-dyndns-updater")
-            .arg("-t")
-            .arg("peach-dyndns-updater")
-            .arg("-n")
-            .arg("3")
-            .output()?;
+        .arg("-u")
+        .arg("peach-dyndns-updater")
+        .arg("-t")
+        .arg("peach-dyndns-updater")
+        .arg("-n")
+        .arg("3")
+        .output()?;
     let log_output = String::from_utf8(output.stdout)?;
     info!("journalctl: {}", log_output);
     let re = Regex::new(r".* peach peach-dyndns-updater.*\[(.*) INFO.*result: Ok\(true\)")?;
@@ -201,15 +201,16 @@ pub fn get_num_seconds_since_successful_dns_update() -> Result<Option<i64>, Peac
             let time_ran = &c[1];
             info!("time: {}", time_ran);
             // parse time string into chrono time
-            let time_ran_dt = DateTime::parse_from_rfc3339(time_ran)
-               .context(ChronoParseError{ msg: "Error parsing time from peach-dyndns-updater journalctl log"})?;
-            let current_time : DateTime<Utc> = Utc::now();
+            let time_ran_dt = DateTime::parse_from_rfc3339(time_ran).context(ChronoParseError {
+                msg: "Error parsing time from peach-dyndns-updater journalctl log",
+            })?;
+            let current_time: DateTime<Utc> = Utc::now();
             let duration = current_time.signed_duration_since(time_ran_dt);
             let duration_in_seconds = duration.num_seconds();
             Ok(Some(duration_in_seconds))
         }
         // if the regex doesn't match, then return None
-        None => Ok(None)
+        None => Ok(None),
     }
 }
 
@@ -224,7 +225,7 @@ pub fn is_dns_updater_online() -> Result<bool, PeachError> {
     let ran_recently: bool;
     match num_seconds_since_successful_update {
         Some(seconds) => {
-            ran_recently = seconds < (60*6);
+            ran_recently = seconds < (60 * 6);
         }
         // if the value is None, then the last time it ran successfully is unknown
         None => {

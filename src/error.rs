@@ -53,7 +53,10 @@ pub enum PeachError {
     #[snafu(display("Stdio error: {}", source))]
     StdIoError { source: std::io::Error },
     #[snafu(display("Failed to parse time from {} {}", source, msg))]
-    ChronoParseError { source: chrono::ParseError, msg: String },
+    ChronoParseError {
+        source: chrono::ParseError,
+        msg: String,
+    },
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {
@@ -82,7 +85,7 @@ impl From<serde_yaml::Error> for PeachError {
 
 impl From<std::io::Error> for PeachError {
     fn from(err: std::io::Error) -> PeachError {
-        PeachError::StdIoError{ source: err }
+        PeachError::StdIoError { source: err }
     }
 }
 
@@ -100,8 +103,9 @@ impl From<std::string::FromUtf8Error> for PeachError {
 
 impl From<chrono::ParseError> for PeachError {
     fn from(err: chrono::ParseError) -> PeachError {
-        PeachError::ChronoParseError { source: err, msg: "".to_string() }
+        PeachError::ChronoParseError {
+            source: err,
+            msg: "".to_string(),
+        }
     }
 }
-
-
