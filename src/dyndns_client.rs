@@ -193,13 +193,11 @@ pub fn get_num_seconds_since_successful_dns_update() -> Result<Option<i64>, Peac
         .arg("3")
         .output()?;
     let log_output = String::from_utf8(output.stdout)?;
-    info!("journalctl: {}", log_output);
     let re = Regex::new(r".* peach peach-dyndns-updater.*\[(.*) INFO.*result: Ok\(true\)")?;
     let cap = re.captures(&log_output);
     match cap {
         Some(c) => {
             let time_ran = &c[1];
-            info!("time: {}", time_ran);
             // parse time string into chrono time
             let time_ran_dt = DateTime::parse_from_rfc3339(time_ran).context(ChronoParseError {
                 msg: "Error parsing time from peach-dyndns-updater journalctl log",
