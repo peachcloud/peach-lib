@@ -13,7 +13,7 @@ use crate::config_manager::{load_peach_config, set_peach_dyndns_config};
 use crate::error::PeachError;
 use crate::error::{
     ChronoParseError, DecodeNsUpdateOutputError, DecodePublicIpError, GetPublicIpError,
-    NsCommandError, SaveTsigKeyError, SaveDynDnsResultError
+    NsCommandError, SaveDynDnsResultError, SaveTsigKeyError,
 };
 use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
@@ -207,8 +207,8 @@ pub fn get_num_seconds_since_successful_dns_update() -> Result<Option<i64>, Peac
     if !log_exists {
         Ok(None)
     } else {
-        let contents = fs::read_to_string(DYNDNS_LOG_PATH)
-            .expect("Something went wrong reading the file");
+        let contents =
+            fs::read_to_string(DYNDNS_LOG_PATH).expect("Something went wrong reading the file");
         // replace newline if found
         let contents = contents.replace("\n", "");
         let time_ran_dt = DateTime::parse_from_rfc3339(&contents).context(ChronoParseError {
