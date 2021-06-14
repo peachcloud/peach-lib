@@ -14,7 +14,7 @@ pub enum PeachError {
     #[snafu(display("{}", source))]
     Serde { source: serde_json::error::Error },
     #[snafu(display("{}", source))]
-    ParseBoolError { source: std::str::ParseBoolError },
+    PeachParseBoolError { source: std::str::ParseBoolError },
     #[snafu(display("{}", source))]
     SetConfigError { source: serde_yaml::Error },
     #[snafu(display("Failed to read: {}", file))]

@@ -10,12 +10,17 @@
 //! The domain for dyndns updates is stored in /var/lib/peachcloud/config.yml
 //! The tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
 use crate::config_manager::{load_peach_config, set_peach_dyndns_config};
-use crate::error::*;
+use crate::error::PeachError;
+use crate::error::{
+    ChronoParseError, DecodeNsUpdateOutputError, DecodePublicIpError, GetPublicIpError,
+    NsCommandError, SaveTsigKeyError,
+};
 use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
 use regex::Regex;
+use snafu::ResultExt;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -101,7 +106,7 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
             let result: Result<bool, ParseBoolError> = FromStr::from_str(&result_str);
             match result {
                 Ok(result_bool) => Ok(result_bool),
-                Err(err) => Err(PeachError::ParseBoolError { source: err }),
+                Err(err) => Err(PeachError::PeachParseBoolError { source: err }),
             }
         }
         Err(err) => Err(PeachError::JsonRpcClientCore { source: err }),
@@ -200,7 +205,7 @@ pub fn get_num_seconds_since_successful_dns_update() -> Result<Option<i64>, Peac
             let time_ran = &c[1];
             // parse time string into chrono time
             let time_ran_dt = DateTime::parse_from_rfc3339(time_ran).context(ChronoParseError {
-                msg: "Error parsing time from peach-dyndns-updater journalctl log",
+                msg: "Error parsing time from peach-dyndns-updater journalctl log".to_string(),
             })?;
             let current_time: DateTime<Utc> = Utc::now();
             let duration = current_time.signed_duration_since(time_ran_dt);
