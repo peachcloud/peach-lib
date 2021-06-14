@@ -235,6 +235,9 @@ pub fn is_dns_updater_online() -> Result<bool, PeachError> {
             ran_recently = false;
         }
     }
+    // debug log
+    info!("is_dyndns_enabled: {:?}", is_enabled);
+    info!("dyndns_ran_recently: {:?}", ran_recently);
     // if both are true, then return true
     Ok(is_enabled && ran_recently)
 }
