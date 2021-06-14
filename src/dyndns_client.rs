@@ -11,9 +11,11 @@
 //! The tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
 use crate::config_manager::{load_peach_config, set_peach_dyndns_config};
 use crate::error::*;
+use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
+use regex::Regex;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -65,7 +67,7 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
     match res {
         Ok(key) => {
             // save new TSIG key
-            save_dyndns_key(&key);
+            save_dyndns_key(&key)?;
             // save new configuration values
             let set_config_result =
                 set_peach_dyndns_config(domain, PEACH_DYNDNS_URL, TSIG_KEY_PATH, true);
@@ -163,7 +165,8 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
         );
         write!(nsupdate_command.stdin.as_ref().unwrap(), "{}", ns_commands).unwrap();
         let nsupdate_output = nsupdate_command
-            .wait_with_output().context(NsCommandError)?;
+            .wait_with_output()
+            .context(NsCommandError)?;
         info!("output: {:?}", nsupdate_output);
         // We only return a successful result if nsupdate was successful
         if nsupdate_output.status.success() {
@@ -171,10 +174,64 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             Ok(true)
         } else {
             info!("nsupdate failed, returning error");
-            let err_msg = String::from_utf8(nsupdate_output.stdout).context(DecodeNsUpdateOutputError)?;
+            let err_msg =
+                String::from_utf8(nsupdate_output.stdout).context(DecodeNsUpdateOutputError)?;
             Err(PeachError::NsUpdateError { msg: err_msg })
         }
     }
+}
+
+/// Helper function to return how many seconds since peach-dyndns-updater successfully ran
+pub fn get_num_seconds_since_successful_dns_update() -> Result<Option<i64>, PeachError> {
+    // use journalctl to get the most recent log from peach-dyndns-updater
+    let output = Command::new("/usr/bin/journalctl")
+        .arg("-u")
+        .arg("peach-dyndns-updater")
+        .arg("-t")
+        .arg("peach-dyndns-updater")
+        .arg("-n")
+        .arg("3")
+        .output()?;
+    let log_output = String::from_utf8(output.stdout)?;
+    let re = Regex::new(r".* peach peach-dyndns-updater.*\[(.*) INFO.*result: Ok\(true\)")?;
+    let cap = re.captures(&log_output);
+    match cap {
+        Some(c) => {
+            let time_ran = &c[1];
+            // parse time string into chrono time
+            let time_ran_dt = DateTime::parse_from_rfc3339(time_ran).context(ChronoParseError {
+                msg: "Error parsing time from peach-dyndns-updater journalctl log",
+            })?;
+            let current_time: DateTime<Utc> = Utc::now();
+            let duration = current_time.signed_duration_since(time_ran_dt);
+            let duration_in_seconds = duration.num_seconds();
+            Ok(Some(duration_in_seconds))
+        }
+        // if the regex doesn't match, then return None
+        None => Ok(None),
+    }
+}
+
+/// helper function which returns a true result if peach-dyndns-updater is enabled
+/// and has successfully run recently (in the last six minutes)
+pub fn is_dns_updater_online() -> Result<bool, PeachError> {
+    // first check if it is enabled in peach-config
+    let peach_config = load_peach_config()?;
+    let is_enabled = peach_config.dyn_enabled;
+    // then check if it has successfully run within the last 6 minutes (60*6 seconds)
+    let num_seconds_since_successful_update = get_num_seconds_since_successful_dns_update()?;
+    let ran_recently: bool;
+    match num_seconds_since_successful_update {
+        Some(seconds) => {
+            ran_recently = seconds < (60 * 6);
+        }
+        // if the value is None, then the last time it ran successfully is unknown
+        None => {
+            ran_recently = false;
+        }
+    }
+    // if both are true, then return true
+    Ok(is_enabled && ran_recently)
 }
 
 jsonrpc_client!(pub struct PeachDynDnsClient {

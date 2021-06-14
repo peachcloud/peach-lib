@@ -46,6 +46,17 @@ pub enum PeachError {
     YamlError { source: serde_yaml::Error },
     #[snafu(display("{:?}", err))]
     JsonRpcCore { err: jsonrpc_core::Error },
+    #[snafu(display("Error creating regex: {}", source))]
+    RegexError { source: regex::Error },
+    #[snafu(display("Failed to decode utf8: {}", source))]
+    FromUtf8Error { source: std::string::FromUtf8Error },
+    #[snafu(display("Stdio error: {}", source))]
+    StdIoError { source: std::io::Error },
+    #[snafu(display("Failed to parse time from {} {}", source, msg))]
+    ChronoParseError {
+        source: chrono::ParseError,
+        msg: String,
+    },
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {
@@ -74,9 +85,27 @@ impl From<serde_yaml::Error> for PeachError {
 
 impl From<std::io::Error> for PeachError {
     fn from(err: std::io::Error) -> PeachError {
-        PeachError::ReadConfigError {
+        PeachError::StdIoError { source: err }
+    }
+}
+
+impl From<regex::Error> for PeachError {
+    fn from(err: regex::Error) -> PeachError {
+        PeachError::RegexError { source: err }
+    }
+}
+
+impl From<std::string::FromUtf8Error> for PeachError {
+    fn from(err: std::string::FromUtf8Error) -> PeachError {
+        PeachError::FromUtf8Error { source: err }
+    }
+}
+
+impl From<chrono::ParseError> for PeachError {
+    fn from(err: chrono::ParseError) -> PeachError {
+        PeachError::ChronoParseError {
             source: err,
-            file: "".to_string(),
+            msg: "".to_string(),
         }
     }
 }
