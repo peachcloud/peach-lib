@@ -11,14 +11,16 @@
 //! The tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
 use crate::config_manager::{load_peach_config, set_peach_dyndns_config};
 use crate::error::PeachError;
-use crate::error::{PeachParseBoolError, GetPublicIpError, DecodePublicIpError,
-    NsCommandError, DecodeNsUpdateOutputError, ChronoParseError, SaveTsigKeyError };
-use snafu::ResultExt;
+use crate::error::{
+    ChronoParseError, DecodeNsUpdateOutputError, DecodePublicIpError, GetPublicIpError,
+    NsCommandError, SaveTsigKeyError,
+};
 use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
 use regex::Regex;
+use snafu::ResultExt;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
