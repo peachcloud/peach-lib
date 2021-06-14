@@ -10,7 +10,7 @@
 //! The domain for dyndns updates is stored in /var/lib/peachcloud/config.yml
 //! The tsig key for authenticating the updates is stored in /var/lib/peachcloud/peach-dyndns/tsig.key
 use crate::config_manager::{load_peach_config, set_peach_dyndns_config};
-use crate::error::PeachError;
+use crate::error::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
@@ -28,18 +28,23 @@ pub const PEACH_DYNDNS_CONFIG_PATH: &str = "/var/lib/peachcloud/peach-dyndns";
 pub const DYNDNS_LOG_PATH: &str = "/var/lib/peachcloud/peach-dyndns/latest_result.log";
 
 /// helper function which saves dyndns TSIG key returned by peach-dyndns-server to /var/lib/peachcloud/peach-dyndns/tsig.key
-pub fn save_dyndns_key(key: &str) {
+pub fn save_dyndns_key(key: &str) -> Result<(), PeachError> {
     // create directory if it doesn't exist
-    fs::create_dir_all(PEACH_DYNDNS_CONFIG_PATH)
-        .unwrap_or_else(|_| panic!("Failed to create: {}", PEACH_DYNDNS_CONFIG_PATH));
+    fs::create_dir_all(PEACH_DYNDNS_CONFIG_PATH).context(SaveTsigKeyError {
+        path: PEACH_DYNDNS_CONFIG_PATH.to_string(),
+    })?;
     // write key text
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
         .open(TSIG_KEY_PATH)
-        .unwrap_or_else(|_| panic!("failed to open {}", TSIG_KEY_PATH));
-    writeln!(file, "{}", key)
-        .unwrap_or_else(|_| panic!("Couldn't write to file: {}", TSIG_KEY_PATH));
+        .context(SaveTsigKeyError {
+            path: TSIG_KEY_PATH.to_string(),
+        })?;
+    writeln!(file, "{}", key).context(SaveTsigKeyError {
+        path: TSIG_KEY_PATH.to_string(),
+    })?;
+    Ok(())
 }
 
 /// Makes a post request to register a new domain with peach-dyns-server
@@ -62,21 +67,17 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
             // save new TSIG key
             save_dyndns_key(&key);
             // save new configuration values
-            let set_config_result = set_peach_dyndns_config(
-                domain,
-                PEACH_DYNDNS_URL,
-                TSIG_KEY_PATH,
-                true
-            );
+            let set_config_result =
+                set_peach_dyndns_config(domain, PEACH_DYNDNS_URL, TSIG_KEY_PATH, true);
             match set_config_result {
                 Ok(_) => {
                     let response = "success".to_string();
                     Ok(response)
                 }
-                Err(err) => Err(PeachError::SetConfigError(err)),
+                Err(err) => Err(err),
             }
         }
-        Err(err) => Err(PeachError::JsonRpcClientCore(err)),
+        Err(err) => Err(PeachError::JsonRpcClientCore { source: err }),
     }
 }
 
@@ -98,22 +99,22 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
             let result: Result<bool, ParseBoolError> = FromStr::from_str(&result_str);
             match result {
                 Ok(result_bool) => Ok(result_bool),
-                Err(err) => Err(PeachError::ParseBoolError(err)),
+                Err(err) => Err(PeachError::ParseBoolError { source: err }),
             }
         }
-        Err(err) => Err(PeachError::JsonRpcClientCore(err)),
+        Err(err) => Err(PeachError::JsonRpcClientCore { source: err }),
     }
 }
 
 /// Helper function to get public ip address of PeachCloud device.
-fn get_public_ip_address() -> String {
+fn get_public_ip_address() -> Result<String, PeachError> {
     // TODO: consider other ways to get public IP address
     let output = Command::new("/usr/bin/curl")
         .arg("ifconfig.me")
         .output()
-        .expect("failed to get public IP");
-    let command_output = std::str::from_utf8(&output.stdout).expect("Incorrect format");
-    command_output.to_string()
+        .context(GetPublicIpError)?;
+    let command_output = std::str::from_utf8(&output.stdout).context(DecodePublicIpError)?;
+    Ok(command_output.to_string())
 }
 
 /// Reads dyndns configurations from config.yml
@@ -144,9 +145,9 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             .arg("-v")
             .stdin(Stdio::piped())
             .spawn()
-            .unwrap();
+            .context(NsCommandError)?;
         // pass nsupdate commands via stdin
-        let public_ip_address = get_public_ip_address();
+        let public_ip_address = get_public_ip_address()?;
         info!("found public ip address: {}", public_ip_address);
         let ns_commands = format!(
             "
@@ -162,8 +163,7 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
         );
         write!(nsupdate_command.stdin.as_ref().unwrap(), "{}", ns_commands).unwrap();
         let nsupdate_output = nsupdate_command
-            .wait_with_output()
-            .expect("failed to wait on child");
+            .wait_with_output().context(NsCommandError)?;
         info!("output: {:?}", nsupdate_output);
         // We only return a successful result if nsupdate was successful
         if nsupdate_output.status.success() {
@@ -171,9 +171,8 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
             Ok(true)
         } else {
             info!("nsupdate failed, returning error");
-            let err_msg = String::from_utf8(nsupdate_output.stdout)
-                .expect("failed to read stdout from nsupdate");
-            Err(PeachError::NsUpdateError(err_msg))
+            let err_msg = String::from_utf8(nsupdate_output.stdout).context(DecodeNsUpdateOutputError)?;
+            Err(PeachError::NsUpdateError { msg: err_msg })
         }
     }
 }
