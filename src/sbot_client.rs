@@ -2,7 +2,7 @@
 //!
 //! In the future this could be moved to its own rust repo, but starting here.
 use crate::error::PeachError;
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 pub fn is_sbot_online() -> Result<bool, PeachError> {
     let output = Command::new("/usr/bin/systemctl")

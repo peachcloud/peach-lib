@@ -19,7 +19,6 @@ use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
-use regex::Regex;
 use snafu::ResultExt;
 use std::fs;
 use std::fs::OpenOptions;
