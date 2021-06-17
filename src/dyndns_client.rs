@@ -13,13 +13,12 @@ use crate::config_manager::{load_peach_config, set_peach_dyndns_config};
 use crate::error::PeachError;
 use crate::error::{
     ChronoParseError, DecodeNsUpdateOutputError, DecodePublicIpError, GetPublicIpError,
-    NsCommandError, SaveTsigKeyError,
+    NsCommandError, SaveDynDnsResultError, SaveTsigKeyError,
 };
 use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
-use regex::Regex;
 use snafu::ResultExt;
 use std::fs;
 use std::fs::OpenOptions;
@@ -176,6 +175,9 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
         // We only return a successful result if nsupdate was successful
         if nsupdate_output.status.success() {
             info!("nsupdate succeeded, returning ok");
+            // log a timestamp that the update was successful
+            log_successful_nsupdate()?;
+            // return true
             Ok(true)
         } else {
             info!("nsupdate failed, returning error");
@@ -186,34 +188,35 @@ pub fn dyndns_update_ip() -> Result<bool, PeachError> {
     }
 }
 
+// Helper function to log a timestamp of the latest successful nsupdate
+pub fn log_successful_nsupdate() -> Result<bool, PeachError> {
+    let now_timestamp = chrono::offset::Utc::now().to_rfc3339();
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(DYNDNS_LOG_PATH)
+        .context(SaveDynDnsResultError)?;
+    write!(file, "{}", now_timestamp).context(SaveDynDnsResultError)?;
+    Ok(true)
+}
+
 /// Helper function to return how many seconds since peach-dyndns-updater successfully ran
 pub fn get_num_seconds_since_successful_dns_update() -> Result<Option<i64>, PeachError> {
-    // use journalctl to get the most recent log from peach-dyndns-updater
-    let output = Command::new("/usr/bin/journalctl")
-        .arg("-u")
-        .arg("peach-dyndns-updater")
-        .arg("-t")
-        .arg("peach-dyndns-updater")
-        .arg("-n")
-        .arg("3")
-        .output()?;
-    let log_output = String::from_utf8(output.stdout)?;
-    let re = Regex::new(r".* peach peach-dyndns-updater.*\[(.*) INFO.*result: Ok\(true\)")?;
-    let cap = re.captures(&log_output);
-    match cap {
-        Some(c) => {
-            let time_ran = &c[1];
-            // parse time string into chrono time
-            let time_ran_dt = DateTime::parse_from_rfc3339(time_ran).context(ChronoParseError {
-                msg: "Error parsing time from peach-dyndns-updater journalctl log".to_string(),
-            })?;
-            let current_time: DateTime<Utc> = Utc::now();
-            let duration = current_time.signed_duration_since(time_ran_dt);
-            let duration_in_seconds = duration.num_seconds();
-            Ok(Some(duration_in_seconds))
-        }
-        // if the regex doesn't match, then return None
-        None => Ok(None),
+    let log_exists = std::path::Path::new(DYNDNS_LOG_PATH).exists();
+    if !log_exists {
+        Ok(None)
+    } else {
+        let contents =
+            fs::read_to_string(DYNDNS_LOG_PATH).expect("Something went wrong reading the file");
+        // replace newline if found
+        let contents = contents.replace("\n", "");
+        let time_ran_dt = DateTime::parse_from_rfc3339(&contents).context(ChronoParseError {
+            msg: "Error parsing dyndns time from latest_result.log".to_string(),
+        })?;
+        let current_time: DateTime<Utc> = Utc::now();
+        let duration = current_time.signed_duration_since(time_ran_dt);
+        let duration_in_seconds = duration.num_seconds();
+        Ok(Some(duration_in_seconds))
     }
 }
 
@@ -235,6 +238,9 @@ pub fn is_dns_updater_online() -> Result<bool, PeachError> {
             ran_recently = false;
         }
     }
+    // debug log
+    info!("is_dyndns_enabled: {:?}", is_enabled);
+    info!("dyndns_ran_recently: {:?}", ran_recently);
     // if both are true, then return true
     Ok(is_enabled && ran_recently)
 }

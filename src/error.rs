@@ -57,6 +57,8 @@ pub enum PeachError {
         source: chrono::ParseError,
         msg: String,
     },
+    #[snafu(display("Failed to save dynamic dns success log: {}", source))]
+    SaveDynDnsResultError { source: std::io::Error },
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {

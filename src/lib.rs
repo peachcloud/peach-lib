@@ -3,6 +3,7 @@ pub mod dyndns_client;
 pub mod error;
 pub mod network_client;
 pub mod oled_client;
+pub mod sbot_client;
 pub mod stats_client;
 
 // re-export error types
