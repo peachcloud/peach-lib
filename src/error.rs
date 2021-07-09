@@ -66,7 +66,7 @@ pub enum PeachError {
     #[snafu(display("The supplied password was not correct"))]
     InvalidPassword,
     #[snafu(display("Error saving new password: {}", msg))]
-    FailedToSetNewPassword { msg : String }
+    FailedToSetNewPassword { msg: String },
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {
@@ -95,7 +95,10 @@ impl From<serde_yaml::Error> for PeachError {
 
 impl From<std::io::Error> for PeachError {
     fn from(err: std::io::Error) -> PeachError {
-        PeachError::StdIoError { source: err, msg: "".to_string() }
+        PeachError::StdIoError {
+            source: err,
+            msg: "".to_string(),
+        }
     }
 }
 

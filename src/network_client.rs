@@ -9,6 +9,9 @@
 //! Several helper methods are also included here which bundle multiple client
 //! calls to achieve the desired functionality.
 
+// TODO: fix these clippy errors so this allow can be removed
+#![allow(clippy::needless_borrow)]
+
 use std::env;
 
 use jsonrpc_client_core::{expand_params, jsonrpc_client};

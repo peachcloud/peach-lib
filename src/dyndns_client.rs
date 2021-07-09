@@ -15,11 +15,11 @@ use crate::error::{
     ChronoParseError, DecodeNsUpdateOutputError, DecodePublicIpError, GetPublicIpError,
     NsCommandError, SaveDynDnsResultError, SaveTsigKeyError,
 };
-use regex::Regex;
 use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
+use regex::Regex;
 use snafu::ResultExt;
 use std::fs;
 use std::fs::OpenOptions;
@@ -63,12 +63,12 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
     let transport = HttpTransport::new().standalone()?;
     let http_server = PEACH_DYNDNS_URL;
     debug!("Creating HTTP transport handle on {}.", http_server);
-    let transport_handle = transport.handle(&http_server)?;
+    let transport_handle = transport.handle(http_server)?;
     info!("Creating client for peach-dyndns service.");
     let mut client = PeachDynDnsClient::new(transport_handle);
 
     info!("Performing register_domain call to peach-dyndns-server");
-    let res = client.register_domain(&domain).call();
+    let res = client.register_domain(domain).call();
     match res {
         Ok(key) => {
             // save new TSIG key
@@ -94,12 +94,12 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
     let transport = HttpTransport::new().standalone()?;
     let http_server = PEACH_DYNDNS_URL;
     debug!("Creating HTTP transport handle on {}.", http_server);
-    let transport_handle = transport.handle(&http_server)?;
+    let transport_handle = transport.handle(http_server)?;
     info!("Creating client for peach_network service.");
     let mut client = PeachDynDnsClient::new(transport_handle);
 
     info!("Performing register_domain call to peach-dyndns-server");
-    let res = client.is_domain_available(&domain).call();
+    let res = client.is_domain_available(domain).call();
     info!("res: {:?}", res);
     match res {
         Ok(result_str) => {
