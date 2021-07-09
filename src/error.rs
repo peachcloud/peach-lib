@@ -50,8 +50,10 @@ pub enum PeachError {
     RegexError { source: regex::Error },
     #[snafu(display("Failed to decode utf8: {}", source))]
     FromUtf8Error { source: std::string::FromUtf8Error },
-    #[snafu(display("Stdio error: {}", source))]
-    StdIoError { source: std::io::Error },
+    #[snafu(display("Encountered Utf8Error: {}", source))]
+    Utf8Error { source: std::str::Utf8Error },
+    #[snafu(display("Stdio error: {}: {}", msg, source))]
+    StdIoError { source: std::io::Error, msg: String },
     #[snafu(display("Failed to parse time from {} {}", source, msg))]
     ChronoParseError {
         source: chrono::ParseError,
@@ -59,6 +61,12 @@ pub enum PeachError {
     },
     #[snafu(display("Failed to save dynamic dns success log: {}", source))]
     SaveDynDnsResultError { source: std::io::Error },
+    #[snafu(display("New passwords do not match"))]
+    PasswordsDoNotMatch,
+    #[snafu(display("The supplied password was not correct"))]
+    InvalidPassword,
+    #[snafu(display("Error saving new password: {}", msg))]
+    FailedToSetNewPassword { msg : String }
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {
@@ -87,7 +95,7 @@ impl From<serde_yaml::Error> for PeachError {
 
 impl From<std::io::Error> for PeachError {
     fn from(err: std::io::Error) -> PeachError {
-        PeachError::StdIoError { source: err }
+        PeachError::StdIoError { source: err, msg: "".to_string() }
     }
 }
 
@@ -100,6 +108,12 @@ impl From<regex::Error> for PeachError {
 impl From<std::string::FromUtf8Error> for PeachError {
     fn from(err: std::string::FromUtf8Error) -> PeachError {
         PeachError::FromUtf8Error { source: err }
+    }
+}
+
+impl From<std::str::Utf8Error> for PeachError {
+    fn from(err: std::str::Utf8Error) -> PeachError {
+        PeachError::Utf8Error { source: err }
     }
 }
 

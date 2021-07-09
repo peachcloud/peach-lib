@@ -5,6 +5,7 @@ pub mod network_client;
 pub mod oled_client;
 pub mod sbot_client;
 pub mod stats_client;
+pub mod password_utils;
 
 // re-export error types
 pub use jsonrpc_client_core;

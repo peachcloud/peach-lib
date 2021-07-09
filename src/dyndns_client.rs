@@ -15,6 +15,7 @@ use crate::error::{
     ChronoParseError, DecodeNsUpdateOutputError, DecodePublicIpError, GetPublicIpError,
     NsCommandError, SaveDynDnsResultError, SaveTsigKeyError,
 };
+use regex::Regex;
 use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
@@ -243,6 +244,26 @@ pub fn is_dns_updater_online() -> Result<bool, PeachError> {
     info!("dyndns_ran_recently: {:?}", ran_recently);
     // if both are true, then return true
     Ok(is_enabled && ran_recently)
+}
+
+/// helper function which builds a full dynamic dns domain from a subdomain
+pub fn get_full_dynamic_domain(subdomain: &str) -> String {
+    format!("{}.dyn.peachcloud.org", subdomain)
+}
+
+/// helper function to get a dyndns subdomain from a dyndns full domain
+pub fn get_dyndns_subdomain(dyndns_full_domain: &str) -> Option<String> {
+    let re = Regex::new(r"(.*)\.dyn\.peachcloud\.org").ok()?;
+    let caps = re.captures(dyndns_full_domain)?;
+    let subdomain = caps.get(1).map_or("", |m| m.as_str());
+    Some(subdomain.to_string())
+}
+
+// helper function which checks if a dyndns domain is new
+pub fn check_is_new_dyndns_domain(dyndns_full_domain: &str) -> bool {
+    let peach_config = load_peach_config().unwrap();
+    let previous_dyndns_domain = peach_config.dyn_domain;
+    dyndns_full_domain != previous_dyndns_domain
 }
 
 jsonrpc_client!(pub struct PeachDynDnsClient {

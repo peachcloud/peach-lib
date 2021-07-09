@@ -30,6 +30,8 @@ pub struct PeachConfig {
     pub dyn_tsig_key_path: String,
     #[serde(default)] // default is false
     pub dyn_enabled: bool,
+    #[serde(default)] // default is empty vector
+    pub ssb_notify_ids: Vec<String>,
 }
 
 // helper functions for serializing and deserializing PeachConfig from disc
@@ -64,6 +66,7 @@ pub fn load_peach_config() -> Result<PeachConfig, PeachError> {
             dyn_dns_server_address: "".to_string(),
             dyn_tsig_key_path: "".to_string(),
             dyn_enabled: false,
+            ssb_notify_ids: Vec::new(),
         };
     }
     // otherwise we load peach config from disk
