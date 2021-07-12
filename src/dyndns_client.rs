@@ -19,6 +19,7 @@ use chrono::prelude::*;
 use jsonrpc_client_core::{expand_params, jsonrpc_client};
 use jsonrpc_client_http::HttpTransport;
 use log::{debug, info};
+use regex::Regex;
 use snafu::ResultExt;
 use std::fs;
 use std::fs::OpenOptions;
@@ -62,12 +63,12 @@ pub fn register_domain(domain: &str) -> std::result::Result<String, PeachError> 
     let transport = HttpTransport::new().standalone()?;
     let http_server = PEACH_DYNDNS_URL;
     debug!("Creating HTTP transport handle on {}.", http_server);
-    let transport_handle = transport.handle(&http_server)?;
+    let transport_handle = transport.handle(http_server)?;
     info!("Creating client for peach-dyndns service.");
     let mut client = PeachDynDnsClient::new(transport_handle);
 
     info!("Performing register_domain call to peach-dyndns-server");
-    let res = client.register_domain(&domain).call();
+    let res = client.register_domain(domain).call();
     match res {
         Ok(key) => {
             // save new TSIG key
@@ -93,12 +94,12 @@ pub fn is_domain_available(domain: &str) -> std::result::Result<bool, PeachError
     let transport = HttpTransport::new().standalone()?;
     let http_server = PEACH_DYNDNS_URL;
     debug!("Creating HTTP transport handle on {}.", http_server);
-    let transport_handle = transport.handle(&http_server)?;
+    let transport_handle = transport.handle(http_server)?;
     info!("Creating client for peach_network service.");
     let mut client = PeachDynDnsClient::new(transport_handle);
 
     info!("Performing register_domain call to peach-dyndns-server");
-    let res = client.is_domain_available(&domain).call();
+    let res = client.is_domain_available(domain).call();
     info!("res: {:?}", res);
     match res {
         Ok(result_str) => {
@@ -243,6 +244,26 @@ pub fn is_dns_updater_online() -> Result<bool, PeachError> {
     info!("dyndns_ran_recently: {:?}", ran_recently);
     // if both are true, then return true
     Ok(is_enabled && ran_recently)
+}
+
+/// helper function which builds a full dynamic dns domain from a subdomain
+pub fn get_full_dynamic_domain(subdomain: &str) -> String {
+    format!("{}.dyn.peachcloud.org", subdomain)
+}
+
+/// helper function to get a dyndns subdomain from a dyndns full domain
+pub fn get_dyndns_subdomain(dyndns_full_domain: &str) -> Option<String> {
+    let re = Regex::new(r"(.*)\.dyn\.peachcloud\.org").ok()?;
+    let caps = re.captures(dyndns_full_domain)?;
+    let subdomain = caps.get(1).map_or("", |m| m.as_str());
+    Some(subdomain.to_string())
+}
+
+// helper function which checks if a dyndns domain is new
+pub fn check_is_new_dyndns_domain(dyndns_full_domain: &str) -> bool {
+    let peach_config = load_peach_config().unwrap();
+    let previous_dyndns_domain = peach_config.dyn_domain;
+    dyndns_full_domain != previous_dyndns_domain
 }
 
 jsonrpc_client!(pub struct PeachDynDnsClient {
