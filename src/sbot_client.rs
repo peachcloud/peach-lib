@@ -37,7 +37,7 @@ pub fn post(msg: &str) -> Result<(), PeachError> {
     } else {
         let stderr = std::str::from_utf8(&output.stderr)?;
         Err(PeachError::SbotCliError {
-            msg: format!("Error making ssb post: {}", stderr)
+            msg: format!("Error making ssb post: {}", stderr),
         })
     }
 }
@@ -84,7 +84,7 @@ pub fn update_pub_name(new_name: &str) -> Result<(), PeachError> {
     } else {
         let stderr = std::str::from_utf8(&output.stderr)?;
         Err(PeachError::SbotCliError {
-            msg: format!("Error updating pub name: {}", stderr)
+            msg: format!("Error updating pub name: {}", stderr),
         })
     }
 }
@@ -103,7 +103,7 @@ pub fn private_message(msg: &str, recipient: &str) -> Result<(), PeachError> {
     } else {
         let stderr = std::str::from_utf8(&output.stderr)?;
         Err(PeachError::SbotCliError {
-            msg: format!("Error sending ssb private message: {}", stderr)
+            msg: format!("Error sending ssb private message: {}", stderr),
         })
     }
 }
