@@ -67,6 +67,8 @@ pub enum PeachError {
     InvalidPassword,
     #[snafu(display("Error saving new password: {}", msg))]
     FailedToSetNewPassword { msg: String },
+    #[snafu(display("Error calling sbotcli: {}", msg))]
+    SbotCliError { msg: String },
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {
