@@ -101,6 +101,17 @@ pub fn set_external_domain(new_external_domain: &str) -> Result<PeachConfig, Pea
     save_peach_config(peach_config)
 }
 
+pub fn get_peachcloud_domain() -> Result<Option<String>, PeachError> {
+    let peach_config = load_peach_config()?;
+    if !peach_config.external_domain.is_empty() {
+        Ok(Some(peach_config.external_domain))
+    } else if !peach_config.dyn_domain.is_empty() {
+        Ok(Some(peach_config.dyn_domain))
+    } else {
+        Ok(None)
+    }
+}
+
 pub fn set_dyndns_enabled_value(enabled_value: bool) -> Result<PeachConfig, PeachError> {
     let mut peach_config = load_peach_config()?;
     peach_config.dyn_enabled = enabled_value;

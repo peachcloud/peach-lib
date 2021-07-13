@@ -1,5 +1,7 @@
+use crate::config_manager::get_peachcloud_domain;
 use crate::error::PeachError;
 use crate::error::StdIoError;
+use crate::sbot_client;
 use log::info;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -115,9 +117,34 @@ pub fn send_password_reset() -> Result<(), PeachError> {
         .map(char::from)
         .take(10)
         .collect();
-
-    info!("temporary password: {}", temporary_password);
-    // then save this string as a new temporary password
+    // save this string as a new temporary password
     set_new_temporary_password(&temporary_password)?;
+    let domain = get_peachcloud_domain()?;
+
+    // then send temporary password as a private ssb message to admin
+    let mut msg = format!(
+        "Your new temporary password is: {}
+
+If you are on the same WiFi network as your PeachCloud device you can reset your password \
+using this link: http://peach.local/reset_password",
+        temporary_password
+    );
+    // if there is an external domain, then include remote link in message
+    // otherwise dont include it
+    let remote_link = match domain {
+        Some(domain) => {
+            format!(
+                "\n\nOr if you are on a different WiFi network, you can reset your password \
+            using the the following link: {}/reset_password",
+                domain
+            )
+        }
+        None => "".to_string(),
+    };
+    msg += &remote_link;
+    // finally send the message to the admin
+    let ssb_admin_id = "@LZx+HP6/fcjUm7vef2eaBKAQ9gAKfzmrMVGzzdJiQtA=.ed25519";
+    info!("msg: {:?}", msg);
+    sbot_client::private_message(&msg, ssb_admin_id)?;
     Ok(())
 }
