@@ -4,9 +4,9 @@
 //!
 //! The configuration file is located at: "/var/lib/peachcloud/config.yml"
 
+use fslock::LockFile;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use fslock::LockFile;
 
 use crate::error::PeachError;
 use crate::error::*;
@@ -38,7 +38,6 @@ pub struct PeachConfig {
 
 // helper functions for serializing and deserializing PeachConfig from disc
 fn save_peach_config(peach_config: PeachConfig) -> Result<PeachConfig, PeachError> {
-
     // use a file lock to avoid race conditions while saving config
     let mut lock = LockFile::open(LOCK_FILE_PATH)?;
     lock.lock()?;
@@ -57,7 +56,6 @@ fn save_peach_config(peach_config: PeachConfig) -> Result<PeachConfig, PeachErro
 }
 
 pub fn load_peach_config() -> Result<PeachConfig, PeachError> {
-
     let peach_config_exists = std::path::Path::new(YAML_PATH).exists();
 
     let peach_config: PeachConfig;
@@ -137,9 +135,9 @@ pub fn delete_ssb_admin_id(ssb_id: &str) -> Result<PeachConfig, PeachError> {
             ssb_admin_ids.remove(index);
             peach_config.ssb_admin_ids = ssb_admin_ids;
             save_peach_config(peach_config)
-        },
-        None => {
-            Err(PeachError::SsbAdminIdNotFound{ id: ssb_id.to_string()})
         }
+        None => Err(PeachError::SsbAdminIdNotFound {
+            id: ssb_id.to_string(),
+        }),
     }
 }
