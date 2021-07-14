@@ -69,6 +69,8 @@ pub enum PeachError {
     FailedToSetNewPassword { msg: String },
     #[snafu(display("Error calling sbotcli: {}", msg))]
     SbotCliError { msg: String },
+    #[snafu(display("Error deleting ssb admin id, id not found"))]
+    SsbAdminIdNotFound { id: String },
 }
 
 impl From<jsonrpc_client_http::Error> for PeachError {

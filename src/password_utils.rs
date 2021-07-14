@@ -1,8 +1,7 @@
-use crate::config_manager::get_peachcloud_domain;
+use crate::config_manager::{get_peachcloud_domain, load_peach_config};
 use crate::error::PeachError;
 use crate::error::StdIoError;
 use crate::sbot_client;
-use log::info;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use snafu::ResultExt;
@@ -142,9 +141,10 @@ using this link: http://peach.local/reset_password",
         None => "".to_string(),
     };
     msg += &remote_link;
-    // finally send the message to the admin
-    let ssb_admin_id = "@LZx+HP6/fcjUm7vef2eaBKAQ9gAKfzmrMVGzzdJiQtA=.ed25519";
-    info!("msg: {:?}", msg);
-    sbot_client::private_message(&msg, ssb_admin_id)?;
+    // finally send the message to the admins
+    let peach_config = load_peach_config()?;
+    for ssb_admin_id in peach_config.ssb_admin_ids {
+        sbot_client::private_message(&msg, &ssb_admin_id)?;
+    }
     Ok(())
 }
