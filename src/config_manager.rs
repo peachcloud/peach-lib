@@ -4,16 +4,18 @@
 //!
 //! The configuration file is located at: "/var/lib/peachcloud/config.yml"
 
+use fslock::LockFile;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::fs::OpenOptions;
-use std::io::Write;
 
 use crate::error::PeachError;
 use crate::error::*;
 
 // main configuration file
 pub const YAML_PATH: &str = "/var/lib/peachcloud/config.yml";
+
+// lock file (used to avoid race conditions during config reading & writing)
+pub const LOCK_FILE_PATH: &str = "/var/lib/peachcloud/config.lock";
 
 // we make use of Serde default values in order to make PeachCloud
 // robust and keep running even with a not fully complete config.yml
@@ -31,25 +33,25 @@ pub struct PeachConfig {
     #[serde(default)] // default is false
     pub dyn_enabled: bool,
     #[serde(default)] // default is empty vector
-    pub ssb_notify_ids: Vec<String>,
+    pub ssb_admin_ids: Vec<String>,
 }
 
 // helper functions for serializing and deserializing PeachConfig from disc
 fn save_peach_config(peach_config: PeachConfig) -> Result<PeachConfig, PeachError> {
+    // use a file lock to avoid race conditions while saving config
+    let mut lock = LockFile::open(LOCK_FILE_PATH)?;
+    lock.lock()?;
+
     let yaml_str = serde_yaml::to_string(&peach_config)?;
 
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(YAML_PATH)
-        .context(ReadConfigError {
-            file: YAML_PATH.to_string(),
-        })?;
-
-    writeln!(file, "{}", yaml_str).context(WriteConfigError {
+    fs::write(YAML_PATH, yaml_str).context(WriteConfigError {
         file: YAML_PATH.to_string(),
     })?;
 
+    // unlock file lock
+    lock.unlock()?;
+
+    // return peach_config
     Ok(peach_config)
 }
 
@@ -66,7 +68,7 @@ pub fn load_peach_config() -> Result<PeachConfig, PeachError> {
             dyn_dns_server_address: "".to_string(),
             dyn_tsig_key_path: "".to_string(),
             dyn_enabled: false,
-            ssb_notify_ids: Vec::new(),
+            ssb_admin_ids: Vec::new(),
         };
     }
     // otherwise we load peach config from disk
@@ -116,4 +118,26 @@ pub fn set_dyndns_enabled_value(enabled_value: bool) -> Result<PeachConfig, Peac
     let mut peach_config = load_peach_config()?;
     peach_config.dyn_enabled = enabled_value;
     save_peach_config(peach_config)
+}
+
+pub fn add_ssb_admin_id(ssb_id: &str) -> Result<PeachConfig, PeachError> {
+    let mut peach_config = load_peach_config()?;
+    peach_config.ssb_admin_ids.push(ssb_id.to_string());
+    save_peach_config(peach_config)
+}
+
+pub fn delete_ssb_admin_id(ssb_id: &str) -> Result<PeachConfig, PeachError> {
+    let mut peach_config = load_peach_config()?;
+    let mut ssb_admin_ids = peach_config.ssb_admin_ids;
+    let index_result = ssb_admin_ids.iter().position(|x| *x == ssb_id);
+    match index_result {
+        Some(index) => {
+            ssb_admin_ids.remove(index);
+            peach_config.ssb_admin_ids = ssb_admin_ids;
+            save_peach_config(peach_config)
+        }
+        None => Err(PeachError::SsbAdminIdNotFound {
+            id: ssb_id.to_string(),
+        }),
+    }
 }
